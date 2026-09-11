@@ -55,8 +55,9 @@ def dashboard():
         'overview_count': mongo.refactoring_financing_overview.count_documents({})
     }
     
-    # 获取Settlement Schedule数据
-    settlement_schedule = get_settlement_schedule()
+    # Settlement Schedule 暂时隐藏，跳过查询；恢复展示时取消注释并传给模板
+    # settlement_schedule = get_settlement_schedule()
+    settlement_schedule = {'due_dates': [], 'totals': {}}
     
     # 获取DB Disbursement数据
     db_disbursement = get_db_disbursement()

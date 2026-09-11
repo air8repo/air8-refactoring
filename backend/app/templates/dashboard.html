@@ -162,6 +162,8 @@
     </div>
 </div>
 
+{# 暂时隐藏 Settlement Schedule 模块；恢复时将下方 if false 改为 if true #}
+{% if false %}
 <!-- Settlement Schedule报表 -->
 <div class="row">
     <div class="col-md-12">
@@ -212,6 +214,7 @@
         </div>
     </div>
 </div>
+{% endif %}
 
 <!-- 版本信息 -->
 <div class="container-fluid mt-5 mb-3">
@@ -329,7 +332,8 @@
         dataDistributionChart.update();
     });
     
-    // Settlement Schedule过滤功能
+    {% if false %}
+    // Settlement Schedule过滤功能（模块隐藏时一并禁用）
     document.getElementById('outstanding_filter').addEventListener('change', function() {
         const filterZero = this.value === 'filter_zero';
         
@@ -363,5 +367,6 @@
                 console.error('{{ _('common.message.failed_get_data') }}:', error);
             });
     });
+    {% endif %}
 </script>
 {% endblock %}
