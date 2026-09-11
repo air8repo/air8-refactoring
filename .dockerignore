@@ -1,0 +1,52 @@
+# Python虚拟环境
+venv/
+env/
+
+# 测试文件
+tests/
+
+# 脚本目录
+scripts/
+
+# 日志文件
+*.log
+*.out
+
+# 缓存文件
+__pycache__/
+*.pyc
+
+# 上传文件
+uploads/
+
+# 翻译文件
+backend/app/translations/
+en/
+zh/
+
+# 保留静态资源和模板文件
+!backend/app/static/
+!backend/app/templates/
+!backend/app/i18n/
+
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+
+# IDE配置
+.vscode/
+.idea/
+
+# Docker相关
+.dockerignore
+Dockerfile
+
+# 其他
+*.xlsx
+*.csv
+*.pdf
+*.bat
+*.ps1
+*.md
+*.txt

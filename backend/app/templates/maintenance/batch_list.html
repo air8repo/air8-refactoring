@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('maintenance.title.batch_management') }} - {{ config.APP_NAME }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{{ _('maintenance.title.batch_management') }}</h1>
+
+<!-- 批次列表 -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">{{ _('maintenance.title.batch_query_list') }}</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="batch-table" class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>{{ _('maintenance.batch_number') }}</th>
+                        <th>{{ _('maintenance.batch_status') }}</th>
+                        <th>{{ _('maintenance.generated_time') }}</th>
+                        <th>{{ _('export.bank_channel') }}</th>
+                        <th>{{ _('maintenance.order_count') }}</th>
+                        <th>{{ _('maintenance.operation') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 动态生成批次列表 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 作废确认模态框 -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cancelModalLabel">{{ _('maintenance.title.confirm_cancel_batch') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>{{ _('maintenance.confirm_cancel_batch_message') }} <strong id="cancelBatchNumber"></strong>{{ _('maintenance.confirm_cancel_suffix') }}</p>
+                <p class="text-danger">{{ _('maintenance.cancel_batch_warning') }}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('common.button.cancel') }}</button>
+                <button type="button" class="btn btn-danger" id="confirmCancel">{{ _('maintenance.confirm_cancel') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 获取批次列表数据
+function getBatches() {
+    fetch('/api/batches')
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 0) {
+                renderBatchTable(data.data);
+            } else {
+                alert(data.msg);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching batches:', error);
+            alert('{{ _("maintenance.fetch_failed") }}');
+        });
+}
+
+// 渲染批次列表
+function renderBatchTable(batches) {
+    const tbody = document.querySelector('#batch-table tbody');
+    tbody.innerHTML = '';
+
+    batches.forEach(batch => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${batch.batch_number}</td>
+            <td>${batch.batch_status}</td>
+            <td>${new Date(batch.batch_created_at).toLocaleString()}</td>
+            <td>${batch.bank_source}</td>
+            <td>${batch.order_count}</td>
+            <td>
+                <a href="/maintenance/batches/${batch.batch_number}" class="btn btn-outline-primary btn-sm me-1">
+                    <i class="fa fa-search-plus"></i> {{ _("maintenance.batch_detail.button") }}
+                </a>
+                <button class="btn btn-danger btn-sm cancel-btn" data-batch="${batch.batch_number}">
+                    <i class="fa fa-trash"></i> {{ _("maintenance.void") }}
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // 添加作废按钮点击事件
+    document.querySelectorAll('.cancel-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const batchNumber = this.getAttribute('data-batch');
+            showCancelModal(batchNumber);
+        });
+    });
+}
+
+// 显示作废确认模态框
+function showCancelModal(batchNumber) {
+    document.getElementById('cancelBatchNumber').textContent = batchNumber;
+    const cancelModal = new bootstrap.Modal(document.getElementById('cancelModal'));
+    cancelModal.show();
+
+    // 保存当前批次号到确认按钮
+    document.getElementById('confirmCancel').setAttribute('data-batch', batchNumber);
+}
+
+// 确认作废批次
+function confirmCancel() {
+    const batchNumber = document.getElementById('confirmCancel').getAttribute('data-batch');
+
+    fetch(`/api/batches/${batchNumber}/cancel`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.code === 0) {
+            alert(data.msg);
+            // 关闭模态框
+            const cancelModal = bootstrap.Modal.getInstance(document.getElementById('cancelModal'));
+            cancelModal.hide();
+            // 刷新批次列表
+            getBatches();
+        } else {
+            alert(data.msg);
+        }
+    })
+    .catch(error => {
+        console.error('Error canceling batch:', error);
+        alert('{{ _("maintenance.cancel_failed") }}');
+    });
+}
+
+// 页面加载时获取批次列表
+document.addEventListener('DOMContentLoaded', function() {
+    getBatches();
+
+    // 添加确认作废按钮点击事件
+    document.getElementById('confirmCancel').addEventListener('click', confirmCancel);
+});
+</script>
+{% endblock %}

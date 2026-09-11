@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('common.button.add') }}{{ table_name }} {{ _('maintenance.add.document') }} - {{ config.APP_NAME }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-group {
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .form-label {
+        font-weight: var(--font-weight-semibold);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{{ _('common.button.add') }}{{ table_name }} {{ _('maintenance.add.document') }}</h1>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fa fa-plus"></i> {{ _('maintenance.add.add_record') }}
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="/maintenance/add/{{ table_name }}">
+            {% if table_name == 'onboarding' %}
+                <!-- Onboarding表字段 -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="uid" class="form-label">UID</label>
+                            <input type="text" class="form-control" id="uid" name="uid" placeholder="UID" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="air8_buyer_id" class="form-label">AIR8_BUYER_ID</label>
+                            <input type="text" class="form-control" id="air8_buyer_id" name="air8_buyer_id" placeholder="AIR8_BUYER_ID" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="obligor_name" class="form-label">OBLIGOR_NAME</label>
+                            <input type="text" class="form-control" id="obligor_name" name="obligor_name" placeholder="OBLIGOR_NAME" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="country" class="form-label">COUNTRY</label>
+                            <input type="text" class="form-control" id="country" name="country" placeholder="COUNTRY" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="air8_seller_id" class="form-label">AIR8_SELLER_ID</label>
+                            <input type="text" class="form-control" id="air8_seller_id" name="air8_seller_id" placeholder="AIR8_SELLER_ID" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="seller_name" class="form-label">SELLER_NAME</label>
+                            <input type="text" class="form-control" id="seller_name" name="seller_name" placeholder="SELLER_NAME" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="target_list_status" class="form-label">TARGET_LIST_STATUS</label>
+                            <select class="form-select" id="target_list_status" name="target_list_status">
+                                <option value="Y">Y</option>
+                                <option value="N">N</option>
+                                <option value="DB setup WIP">DB setup WIP</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="approved_tenor_days" class="form-label">APPROVED_TENOR_DAYS</label>
+                            <input type="number" class="form-control" id="approved_tenor_days" name="approved_tenor_days" placeholder="APPROVED_TENOR_DAYS" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="max_invoice_count" class="form-label">MAX_INVOICE_COUNT</label>
+                            <input type="number" class="form-control" id="max_invoice_count" name="max_invoice_count" placeholder="MAX_INVOICE_COUNT" value="0">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="remarks" class="form-label">REMARKS</label>
+                            <input type="text" class="form-control" id="remarks" name="remarks" placeholder="REMARKS">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="first_submit_date" class="form-label">FIRST_SUBMIT_DATE</label>
+                            <input type="text" class="form-control" id="first_submit_date" name="first_submit_date" placeholder="YYYY-MM-DD">
+                        </div>
+                    </div>
+                </div>
+            {% elif table_name == 'financing' %}
+                <!-- Financing表字段 - 简单版本，可根据需要扩展 -->
+                <div class="form-group">
+                    <label for="finance_request_number" class="form-label">FINANCE_REQUEST_NUMBER</label>
+                    <input type="text" class="form-control" id="finance_request_number" name="finance_request_number" placeholder="FINANCE_REQUEST_NUMBER" required>
+                </div>
+                <div class="form-group">
+                    <label for="invoice_number" class="form-label">INVOICE_NUMBER</label>
+                    <input type="text" class="form-control" id="invoice_number" name="invoice_number" placeholder="INVOICE_NUMBER" required>
+                </div>
+                <div class="form-group">
+                    <label for="buyer_code" class="form-label">BUYER_CODE</label>
+                    <input type="text" class="form-control" id="buyer_code" name="buyer_code" placeholder="BUYER_CODE">
+                </div>
+                <div class="form-group">
+                    <label for="supplier_code" class="form-label">SUPPLIER_CODE</label>
+                    <input type="text" class="form-control" id="supplier_code" name="supplier_code" placeholder="SUPPLIER_CODE">
+                </div>
+                <div class="form-group">
+                    <label for="trade_amount" class="form-label">TRADE_AMOUNT</label>
+                    <input type="number" class="form-control" id="trade_amount" name="trade_amount" placeholder="TRADE_AMOUNT" step="any">
+                </div>
+            {% elif table_name == 'repayment' %}
+                <!-- Repayment表字段 - 简单版本 -->
+                <div class="form-group">
+                    <label for="finance_request_number" class="form-label">FINANCE_REQUEST_NUMBER</label>
+                    <input type="text" class="form-control" id="finance_request_number" name="finance_request_number" placeholder="FINANCE_REQUEST_NUMBER" required>
+                </div>
+                <div class="form-group">
+                    <label for="settlement_date" class="form-label">SETTLEMENT_DATE</label>
+                    <input type="text" class="form-control" id="settlement_date" name="settlement_date" placeholder="YYYY-MM-DD" required>
+                </div>
+                <div class="form-group">
+                    <label for="cumulative_repayment" class="form-label">CUMULATIVE_REPAYMENT</label>
+                    <input type="number" class="form-control" id="cumulative_repayment" name="cumulative_repayment" placeholder="CUMULATIVE_REPAYMENT" step="any">
+                </div>
+            {% else %}
+                <!-- 其他表的默认字段，根据需要扩展 -->
+                <p class="text-muted">{{ _('maintenance.add.unsupported_table') }}</p>
+            {% endif %}
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa fa-save"></i> {{ _('common.button.save') }}
+                </button>
+                <a href="{{ url_for('maintenance.view_table', table_name=table_name) }}" class="btn btn-secondary">
+                    <i class="fa fa-times"></i> {{ _('common.button.cancel') }}
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0"><i class="fa fa-info-circle"></i> {{ _('maintenance.add.instructions') }}</h5>
+    </div>
+    <div class="card-body">
+        <ul>
+            <li>{{ _('maintenance.add.fill_fields') }}</li>
+            <li>{{ _('maintenance.add.required_fields') }}</li>
+            <li>{{ _('maintenance.add.save_immediate') }}</li>
+            <li>{{ _('maintenance.add.verify_accuracy') }}</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

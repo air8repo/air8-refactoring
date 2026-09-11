@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('common.title.data_import') }} - {{ config.APP_NAME }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">{{ _('common.title.data_import') }}</h1>
+    <p class="text-muted">{{ _('import.description') }}</p>
+</div>
+
+<!-- Excel上传卡片 -->
+<div class="card mb-6">
+    <div class="card-header">
+        <h5 class="card-title"><i class="fa fa-upload"></i> {{ _('import.upload_excel') }}</h5>
+    </div>
+    <div class="card-body">
+        <form id="excel-upload-form" method="POST" action="{{ url_for('import.upload_file') }}" enctype="multipart/form-data" class="form-horizontal">
+            <div class="form-row">
+                <div class="form-col">
+                    <label for="import_type" class="form-label">{{ _('import.import_type') }}</label>
+                    <select class="form-select" id="import_type" name="import_type" required>
+                        <option value="">{{ _('import.select_import_type') }}</option>
+                        <option value="onboarding">{{ _('import.onboarding_config') }}</option>
+                        <option value="financing">{{ _('export.financing_orders') }}</option>
+                        <option value="repayment">{{ _('export.repayment_orders') }}</option>
+                        <option value="bank_statement">{{ _('export.bank_statements') }}</option>
+                        <option value="batch_number">{{ _('export.batch_update') }}</option>
+                        <option value="repayment_date">{{ _('export.repayment_date_import') }}</option>
+                    </select>
+                    <div class="form-text">{{ _('import.select_import_type_desc') }}</div>
+                </div>
+                
+                <div class="form-col" id="bank_channel_div" style="display: none;">
+                    <label for="bank_channel" class="form-label">{{ _('import.bank_channel') }}</label>
+                    <select class="form-select" id="bank_channel" name="bank_channel">
+                        <option value="DB">DB</option>
+                        <!-- 预留其他银行渠道 -->
+                        <!-- <option value="OTHER">其他</option> -->
+                    </select>
+                    <div class="form-text">{{ _('import.bank_channel_desc') }}</div>
+                </div>
+                
+                <div class="form-col">
+                    <label for="file" class="form-label">{{ _('common.button.select_file') }}</label>
+                    <input class="form-control" type="file" id="file" name="file" accept=".xlsx,.xls" required>
+                    <div class="form-text">{{ _('import.excel_support') }}</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="validate_only" name="validate_only">
+                    <label class="form-check-label" for="validate_only">{{ _('import.validate_only') }}</label>
+                </div>
+                <div class="form-text">{{ _('import.validate_only_desc') }}</div>
+            </div>
+            
+            <div class="card-footer">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa fa-upload"></i> {{ _('common.button.start_import') }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- API导入卡片 -->
+<div class="card mb-6">
+    <div class="card-header">
+        <h5 class="card-title"><i class="fa fa-cloud-download"></i> {{ _('import.import_from_api') }}</h5>
+    </div>
+    <div class="card-body">
+        <form id="api-import-form" method="POST" action="{{ url_for('import.import_from_api') }}" class="form-horizontal">
+            <div class="form-row">
+                <div class="form-col">
+                    <label for="api_import_type" class="form-label">{{ _('import.import_type') }}</label>
+                    <select class="form-select" id="api_import_type" name="import_type" required>
+                        <option value="">{{ _('import.select_import_type') }}</option>
+                        <option value="repayment">{{ _('export.repayment_orders') }}</option>
+                        <option value="financing">{{ _('export.financing_orders') }}</option>
+                    </select>
+                    <div class="form-text">{{ _('import.api_support_note') }}</div>
+                </div>
+            </div>
+            
+            <div class="card-footer">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa fa-cloud-download"></i> {{ _('import.import_from_api') }}
+                </button>
+                <button type="button" id="sync-air8-btn" class="btn btn-success">
+                    <i class="fa fa-refresh"></i> {{ _('import.sync_air8') }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+
+<!-- 导入说明 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title"><i class="fa fa-info-circle"></i> {{ _('import.instructions') }}</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="mb-3">{{ _('import.preparation') }}：</h6>
+                <ul class="list-unstyled space-y-2">
+                    <li><i class="fa fa-check-circle text-success me-2"></i> {{ _('import.format_check') }}</li>
+                    <li><i class="fa fa-check-circle text-success me-2"></i> {{ _('import.required_fields') }}</li>
+                    <li><i class="fa fa-check-circle text-success me-2"></i> {{ _('import.date_format') }}</li>
+                    <li><i class="fa fa-check-circle text-success me-2"></i> {{ _('import.numeric_fields') }}</li>
+                </ul>
+            </div>
+            
+            <div class="col-md-6">
+                <h6 class="mb-3">{{ _('import.post_import_notes') }}：</h6>
+                <ul class="list-unstyled space-y-2">
+                    <li><i class="fa fa-info-circle text-info me-2"></i> {{ _('import.auto_clean') }}</li>
+                    <li><i class="fa fa-info-circle text-info me-2"></i> {{ _('import.deduplication') }}</li>
+                    <li><i class="fa fa-info-circle text-info me-2"></i> {{ _('import.aggregation_suggestion') }}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // 当导入类型变化时，显示/隐藏银行渠道选择
+    document.getElementById('import_type').addEventListener('change', function() {
+        var bankChannelDiv = document.getElementById('bank_channel_div');
+        if (this.value === 'bank_statement') {
+            bankChannelDiv.style.display = 'block';
+        } else {
+            bankChannelDiv.style.display = 'none';
+        }
+    });
+    
+    // 初始化显示状态
+    document.getElementById('import_type').dispatchEvent(new Event('change'));
+    
+    // Excel上传表单处理
+    let excelUploading = false;  // 防止重复提交导致重复导入/重复邮件
+    document.getElementById('excel-upload-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        if (excelUploading) return;  // 正在导入中，忽略再次提交
+        excelUploading = true;
+
+        const form = this;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
+        const formData = new FormData(form);
+
+        // 显示遮罩层
+        showLoading();
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            // 隐藏遮罩层
+            hideLoading();
+            excelUploading = false;
+            if (submitBtn) submitBtn.disabled = false;
+
+            // 显示结果消息
+            if (data.success) {
+                showMessage(data.message, 'success');
+                // 重置表单
+                form.reset();
+                // 重新初始化导入类型选择
+                document.getElementById('import_type').dispatchEvent(new Event('change'));
+            } else {
+                showMessage(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            // 隐藏遮罩层
+            hideLoading();
+            excelUploading = false;
+            if (submitBtn) submitBtn.disabled = false;
+
+            // 显示错误消息
+            showMessage('{{ _("common.message.import_failed") }}', 'danger');
+            console.error('Import error:', error);
+        });
+    });
+    
+    // 一键同步Air8数据（分步骤显示进度）
+    document.getElementById('sync-air8-btn').addEventListener('click', async function() {
+        if (!confirm('{{ _("import.sync_air8_confirm") }}\n\n{{ _("import.sync_air8_step1") }}\n{{ _("import.sync_air8_step2") }}\n{{ _("import.sync_air8_step3") }}')) return;
+
+        const steps = [
+            { label: '{{ _("import.sync_air8_step1") }}', status: 'pending', message: '' },
+            { label: '{{ _("import.sync_air8_step2") }}', status: 'pending', message: '' },
+            { label: '{{ _("import.sync_air8_step3") }}', status: 'pending', message: '' }
+        ];
+
+        function renderProgress() {
+            const icons = { done: 'fa-check-circle', running: 'fa-spinner fa-spin', pending: 'fa-circle-o', failed: 'fa-times-circle' };
+            return steps.map(s => {
+                const icon = icons[s.status] || icons.pending;
+                const msg = s.message ? ` - ${s.message}` : '';
+                return `<div class="step-item ${s.status}"><i class="fa ${icon}"></i> ${s.label}${msg}</div>`;
+            }).join('');
+        }
+
+        showLoading();
+        updateLoadingProgress(renderProgress());
+
+        try {
+            // Step 1: 导入还款单
+            steps[0].status = 'running';
+            updateLoadingProgress(renderProgress());
+
+            const formData1 = new FormData();
+            formData1.append('import_type', 'repayment');
+            const resp1 = await fetch("{{ url_for('import.import_from_api') }}", { method: 'POST', body: formData1, credentials: 'same-origin' });
+            const data1 = await resp1.json();
+            if (data1.success) {
+                steps[0].status = 'done';
+                steps[0].message = data1.message || 'OK';
+            } else {
+                steps[0].status = 'failed';
+                steps[0].message = data1.message || '{{ _("import.sync_air8_error") }}';
+                updateLoadingProgress(renderProgress());
+                hideLoading();
+                showMessage('{{ _("import.sync_air8_step1") }} {{ _("import.sync_air8_failed") }}: ' + (data1.message || ''), 'danger');
+                return;
+            }
+            updateLoadingProgress(renderProgress());
+
+            // Step 2: 导入融资单
+            steps[1].status = 'running';
+            updateLoadingProgress(renderProgress());
+
+            const formData2 = new FormData();
+            formData2.append('import_type', 'financing');
+            const resp2 = await fetch("{{ url_for('import.import_from_api') }}", { method: 'POST', body: formData2, credentials: 'same-origin' });
+            const data2 = await resp2.json();
+            if (data2.success) {
+                steps[1].status = 'done';
+                steps[1].message = data2.message || 'OK';
+            } else {
+                steps[1].status = 'failed';
+                steps[1].message = data2.message || '{{ _("import.sync_air8_error") }}';
+                updateLoadingProgress(renderProgress());
+                hideLoading();
+                showMessage('{{ _("import.sync_air8_step2") }} {{ _("import.sync_air8_failed") }}: ' + (data2.message || ''), 'danger');
+                return;
+            }
+            updateLoadingProgress(renderProgress());
+
+            // Step 3: 刷新融资单
+            steps[2].status = 'running';
+            updateLoadingProgress(renderProgress());
+
+            const resp3 = await fetch("{{ url_for('import.sync_air8_data') }}", { method: 'POST', credentials: 'same-origin' });
+            const data3 = await resp3.json();
+            if (data3.success) {
+                steps[2].status = 'done';
+                steps[2].message = data3.message || 'OK';
+            } else {
+                steps[2].status = 'failed';
+                steps[2].message = data3.message || '{{ _("import.sync_air8_error") }}';
+                updateLoadingProgress(renderProgress());
+                hideLoading();
+                showMessage('{{ _("import.sync_air8_step3") }} {{ _("import.sync_air8_failed") }}: ' + (data3.message || ''), 'danger');
+                return;
+            }
+            updateLoadingProgress(renderProgress());
+
+            // 全部完成
+            setTimeout(() => {
+                hideLoading();
+                showMessage('{{ _("import.sync_air8_complete") }}', 'success');
+            }, 800);
+
+        } catch (error) {
+            hideLoading();
+            showMessage('{{ _("import.sync_air8_error") }}', 'danger');
+            console.error('Sync error:', error);
+        }
+    });
+
+    // API导入表单处理
+    document.getElementById('api-import-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const form = this;
+        const formData = new FormData(form);
+        
+        // 显示遮罩层
+        showLoading();
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            // 隐藏遮罩层
+            hideLoading();
+            
+            // 显示结果消息
+            if (data.success) {
+                showMessage(data.message, 'success');
+                // 重置表单
+                form.reset();
+            } else {
+                showMessage(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            // 隐藏遮罩层
+            hideLoading();
+            
+            // 显示错误消息
+            showMessage('{{ _("common.message.api_import_failed") }}', 'danger');
+            console.error('API import error:', error);
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

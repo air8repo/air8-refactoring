@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('common.title.data_export') }} - {{ config.APP_NAME }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 加载遮罩样式 */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .loading-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .loading-content {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        text-align: center;
+        max-width: 90%;
+        width: 400px;
+    }
+
+    .loading-spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border-left-color: #0d6efd;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+        font-size: 1.1rem;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+
+    .loading-subtext {
+        font-size: 0.9rem;
+        color: #666;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{{ _('common.title.data_export') }}</h1>
+
+<div class="row">
+    <!-- 生成DB放款文件卡片 -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fa fa-credit-card"></i> {{ _('export.generate_db_loan_file') }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('export.generate_db_loan_file') }}">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="batch_date" class="form-label">{{ _('export.batch_date') }}</label>
+                            <input type="date" class="form-control" id="batch_date" name="batch_date" required>
+                            <div class="form-text">{{ _('export.enter_batch_date') }}</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="bank_channel" class="form-label">{{ _('export.bank_channel') }}</label>
+                            <select class="form-select" id="bank_channel" name="bank_channel" required>
+                                <option value="db">DB</option>
+                                <option value="db2">DB2</option>
+                            </select>
+                            <div class="form-text">{{ _('export.select_bank_channel') }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fa fa-file-excel-o"></i> {{ _('export.generate_db_loan_file') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 生成DB还款文件卡片 -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fa fa-credit-card"></i> {{ _('export.generate_db_repayment_file') }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('export.generate_db_repayment_file') }}">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="repayment_date" class="form-label">{{ _('export.repayment_date') }}</label>
+                            <input type="date" class="form-control" id="repayment_date" name="repayment_date" required>
+                            <div class="form-text">{{ _('export.enter_repayment_date') }}</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="repayment_bank_channel" class="form-label">{{ _('export.bank_channel') }}</label>
+                            <select class="form-select" id="repayment_bank_channel" name="bank_channel" required>
+                                <option value="db">DB</option>
+                                <option value="db2">DB2</option>
+                            </select>
+                            <div class="form-text">{{ _('export.select_bank_channel') }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fa fa-file-excel-o"></i> {{ _('export.generate_db_repayment_file') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 刷新融资单卡片 -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fa fa-refresh"></i> {{ _('export.refresh_financing_orders') }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('export.refresh_financing_orders') }}">
+                    <p class="mb-3">{{ _('export.refresh_financing_description') }}</p>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-info">
+                            <i class="fa fa-refresh"></i> {{ _('export.refresh_financing_orders') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 更新融资概览数据卡片 -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fa fa-refresh"></i> {{ _('export.update_financing_overview') }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('export.update_overview') }}">
+                    <p class="mb-3">{{ _('export.update_overview_description') }}</p>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fa fa-refresh"></i> {{ _('export.update_overview_data') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fa fa-download"></i> {{ _('common.button.export') }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('export.generate_export') }}">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="data_type" class="form-label">{{ _('export.data_type') }}</label>
+                            <select class="form-select" id="data_type" name="data_type" required>
+                                <option value="">{{ _('export.select_data_type') }}</option>
+                                <option value="financing">{{ _('export.financing_orders') }}</option>
+                                <option value="repayment">{{ _('export.repayment_orders') }}</option>
+                                <option value="statement">{{ _('export.bank_statements') }}</option>
+                                <option value="overview">{{ _('export.financing_overview') }}</option>
+                            </select>
+                            <div class="form-text">{{ _('export.select_data_type_desc') }}</div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="export_type" class="form-label">{{ _('export.export_format') }}</label>
+                            <select class="form-select" id="export_type" name="export_type" required>
+                                <option value="">{{ _('export.select_export_format') }}</option>
+                                <option value="excel">Excel (.xlsx)</option>
+                                <option value="csv">CSV (.csv)</option>
+                                <option value="pdf">PDF (.pdf)</option>
+                            </select>
+                            <div class="form-text">{{ _('export.export_format_desc') }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0"><i class="fa fa-filter"></i> {{ _('export.filter_conditions') }}</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="finance_request_number" class="form-label">{{ _('export.finance_request_number') }}</label>
+                                        <input type="text" class="form-control" id="finance_request_number" name="finance_request_number" placeholder="{{ _('export.enter_finance_request_number') }}">
+                                        <div class="form-text">{{ _('export.filter_by_request_number') }}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="invoice_number" class="form-label">{{ _('export.invoice_number') }}</label>
+                                        <input type="text" class="form-control" id="invoice_number" name="invoice_number" placeholder="{{ _('export.enter_invoice_number') }}">
+                                        <div class="form-text">{{ _('export.filter_by_invoice_number') }}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="refactoring_status" class="form-label">{{ _('export.refactoring_status') }}</label>
+                                        <select class="form-select" id="refactoring_status" name="refactoring_status">
+                                            <option value="">{{ _('export.select_refactoring_status') }}</option>
+                                            <option value="Loan booked">Loan booked</option>
+                                            <option value="Booking request accepted">Booking request accepted</option>
+                                        </select>
+                                        <div class="form-text">{{ _('export.filter_by_refactoring_status') }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-download"></i> {{ _('common.button.start_export') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 导出说明 -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0"><i class="fa fa-info-circle"></i> {{ _('export.instructions') }}</h5>
+    </div>
+    <div class="card-body">
+        <h6>{{ _('export.format_instructions') }}：</h6>
+        <ul>
+            <li><strong>Excel (.xlsx)</strong>：{{ _('export.excel_description') }}</li>
+            <li><strong>CSV (.csv)</strong>：{{ _('export.csv_description') }}</li>
+            <li><strong>PDF (.pdf)</strong>：{{ _('export.pdf_description') }}</li>
+        </ul>
+        
+        <h6>{{ _('export.notes') }}：</h6>
+        <ul>
+            <li>{{ _('export.large_data_note') }}</li>
+            <li>{{ _('export.filter_suggestion') }}</li>
+            <li>{{ _('export.fields_included_note') }}</li>
+            <li>{{ _('export.download_note') }}</li>
+        </ul>
+    </div>
+</div>
+
+<!-- 加载遮罩 -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">{{ _('export.processing') }}</div>
+        <div class="loading-subtext">{{ _('export.please_wait') }}</div>
+    </div>
+</div>
+
+<!-- 隐藏iframe用于文件下载 -->
+<iframe id="downloadFrame" style="display: none;"></iframe>
+
+{% block extra_js %}
+<script>
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', function() {
+        // 获取加载遮罩元素
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const downloadFrame = document.getElementById('downloadFrame');
+        
+        // 页面加载时自动隐藏遮罩层
+        loadingOverlay.classList.remove('active');
+        
+        // 更可靠的iframe事件处理：监听load和error事件，并使用定时器轮询
+        function hideLoadingOverlay() {
+            loadingOverlay.classList.remove('active');
+            // 清除所有相关定时器
+            if (window.exportTimeout) {
+                clearTimeout(window.exportTimeout);
+                window.exportTimeout = null;
+            }
+            if (window.pollingInterval) {
+                clearInterval(window.pollingInterval);
+                window.pollingInterval = null;
+            }
+        }
+        
+        // 监听iframe的load和error事件
+        downloadFrame.addEventListener('load', hideLoadingOverlay);
+        downloadFrame.addEventListener('error', hideLoadingOverlay);
+        
+        // 获取所有表单
+        const allForms = document.querySelectorAll('form');
+        
+        // 为每个表单添加提交事件监听器
+        allForms.forEach(form => {
+            form.addEventListener('submit', function(event) {
+                // 显示加载遮罩
+                loadingOverlay.classList.add('active');
+                
+                // 检查表单是否为文件下载表单
+                const action = form.action;
+                const isFileDownloadForm = action.includes('generate_db_loan_file') || 
+                                          action.includes('generate_db_repayment_file') || 
+                                          action.includes('generate_export');
+                
+                if (isFileDownloadForm) {
+                    event.preventDefault();
+                    
+                    // 创建临时表单并设置为iframe提交
+                    const tempForm = form.cloneNode(true);
+                    tempForm.target = 'downloadFrame';
+                    tempForm.style.display = 'none';
+                    document.body.appendChild(tempForm);
+                    
+                    // 使用更可靠的方法处理iframe下载
+                    tempForm.submit();
+                    
+                    // 移除临时表单
+                    setTimeout(() => {
+                        tempForm.remove();
+                    }, 1000);
+                    
+                    // 智能兜底方案：
+                    // 1. 先设置一个较长的初始超时（10秒）
+                    window.exportTimeout = setTimeout(() => {
+                        // 如果初始超时触发，开始轮询检查iframe状态
+                        window.pollingInterval = setInterval(() => {
+                            try {
+                                // 尝试访问iframe的内容，判断是否加载完成
+                                if (downloadFrame.contentDocument && 
+                                    downloadFrame.contentDocument.readyState === 'complete') {
+                                    hideLoadingOverlay();
+                                }
+                            } catch (e) {
+                                // 跨域访问会抛出异常，这通常意味着下载已开始
+                                hideLoadingOverlay();
+                            }
+                        }, 500);
+                    }, 10000);
+                } else {
+                    // 对于非文件下载表单（如刷新数据），不需要特殊处理
+                    // 页面会重新加载，遮罩层会在DOMContentLoaded时被移除
+                }
+            });
+        });
+        
+        // 添加窗口焦点事件监听器，当用户从其他标签页返回时，检查并隐藏可能遗留的遮罩层
+        window.addEventListener('focus', function() {
+            // 如果遮罩层显示超过30秒，自动隐藏
+            const overlayActive = loadingOverlay.classList.contains('active');
+            if (overlayActive) {
+                hideLoadingOverlay();
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

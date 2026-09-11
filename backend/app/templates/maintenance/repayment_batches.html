@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('maintenance.title.repayment_batches') }} - {{ config.APP_NAME }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{{ _('maintenance.title.repayment_batches') }}</h1>
+
+<!-- 还款批次列表 -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">{{ _('maintenance.repayment_batch_list') }}</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>{{ _('maintenance.repayment_batch_date') }}</th>
+                        <th>{{ _('export.bank_channel') }}</th>
+                        <th>{{ _('maintenance.batch_status') }}</th>
+                        <th>{{ _('maintenance.record_count') }}</th>
+                        <th>{{ _('maintenance.created_at') }}</th>
+                        <th>{{ _('maintenance.operation') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for batch in batches %}
+                    <tr>
+                        <td>{{ batch._id }}</td>
+                        <td>{{ batch.bank_channel }}</td>
+                        <td>{{ batch.batch_status }}</td>
+                        <td>{{ batch.record_count }}</td>
+                        <td>{{ batch.created_at.strftime('%Y-%m-%d %H:%M:%S') if batch.created_at else '' }}</td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="{{ url_for('maintenance.repayment_batch_detail', batch_date=batch._id) }}"
+                                   class="btn btn-info btn-sm">
+                                    <i class="fa fa-list"></i> {{ _('maintenance.detail') }}
+                                </a>
+                                <form action="{{ url_for('maintenance.void_repayment_batch', batch_date=batch._id) }}" method="POST" onsubmit="return confirm('{{ _("maintenance.repayment_batch_confirm_void_prefix") }} {{ batch._id }} {{ _("maintenance.repayment_batch_confirm_void_suffix") }}')">
+                                    <button type="submit" class="btn btn-danger btn-sm">
+                                        <i class="fa fa-trash"></i> {{ _('maintenance.void') }}
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if batches|length == 0 %}
+        <div class="text-center text-muted py-4">
+            <i class="fa fa-inbox fa-3x mb-3"></i>
+            <p>{{ _('maintenance.repayment_batch_no_records') }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

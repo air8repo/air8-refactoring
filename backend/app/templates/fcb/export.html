@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('fcb.export.title') }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{{ _('fcb.export.title') }}</h1>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fa fa-file-excel-o"></i> {{ _('fcb.export.title') }}</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">{{ _('fcb.export.description') }}</p>
+
+                <form id="exportForm">
+                    <div class="mb-3">
+                        <label for="financingNos" class="form-label">{{ _('fcb.export.financing_nos_label') }} <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="financingNos" rows="8"
+                                  placeholder="{{ _('fcb.export.financing_nos_placeholder') }}" required></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary" id="exportBtn">
+                            <i class="fa fa-download"></i> {{ _('fcb.export.export_btn') }}
+                        </button>
+                    </div>
+                </form>
+
+                <div id="errorArea" class="mt-3" style="display:none;">
+                    <div id="errorContent" class="alert alert-danger"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fa fa-info-circle"></i> {{ _('fcb.export.instructions_title') }}</h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>{{ _('fcb.export.instruction_1') }}</li>
+                    <li>{{ _('fcb.export.instruction_2') }}</li>
+                    <li>{{ _('fcb.export.instruction_3') }}</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fa fa-clock-o"></i> {{ _('fcb.export.daily_push_title') }}</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">{{ _('fcb.export.daily_push_desc') }}</p>
+                <button class="btn btn-warning w-100" id="dailyPushBtn" onclick="triggerDailyExport()">
+                    <i class="fa fa-paper-plane"></i> {{ _('fcb.export.daily_push_btn') }}
+                </button>
+                <div id="dailyPushResult" class="mt-2" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var form = document.getElementById('exportForm');
+    var exportBtn = document.getElementById('exportBtn');
+    var errorArea = document.getElementById('errorArea');
+    var errorContent = document.getElementById('errorContent');
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        errorArea.style.display = 'none';
+
+        var text = document.getElementById('financingNos').value.trim();
+        if (!text) return;
+
+        var nos = text.split('\n').map(function(s){ return s.trim(); }).filter(function(s){ return s.length > 0; });
+        if (nos.length === 0) return;
+
+        exportBtn.disabled = true;
+        exportBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> {{ _("fcb.export.processing") }}';
+
+        fetch('{{ url_for("fcb.api_export") }}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({financing_nos: nos})
+        })
+        .then(function(response) {
+            if (!response.ok) {
+                return response.json().then(function(data) {
+                    throw new Error(data.message || '{{ _("fcb.export.error") }}');
+                });
+            }
+            var disposition = response.headers.get('Content-Disposition');
+            var filename = 'export.xlsx';
+            if (disposition) {
+                var match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                if (match && match[1]) filename = match[1].replace(/['"]/g, '');
+            }
+            return response.blob().then(function(blob) {
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            });
+        })
+        .catch(function(err) {
+            errorContent.textContent = err.message || '{{ _("fcb.export.error") }}';
+            errorArea.style.display = 'block';
+        })
+        .finally(function() {
+            exportBtn.disabled = false;
+            exportBtn.innerHTML = '<i class="fa fa-download"></i> {{ _("fcb.export.export_btn") }}';
+        });
+    });
+});
+
+function triggerDailyExport() {
+    var btn = document.getElementById('dailyPushBtn');
+    var resultDiv = document.getElementById('dailyPushResult');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> {{ _("fcb.export.processing") }}';
+    resultDiv.style.display = 'none';
+
+    fetch('{{ url_for("fcb.api_trigger_daily_export") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+        resultDiv.style.display = 'block';
+        if (data.success) {
+            resultDiv.innerHTML = '<div class="alert alert-success mb-0"><i class="fa fa-check"></i> ' + (data.message || 'Success') + '</div>';
+        } else {
+            resultDiv.innerHTML = '<div class="alert alert-danger mb-0"><i class="fa fa-times"></i> ' + (data.message || 'Failed') + '</div>';
+        }
+    })
+    .catch(function(err) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<div class="alert alert-danger mb-0"><i class="fa fa-times"></i> ' + err.message + '</div>';
+    })
+    .finally(function() {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa fa-paper-plane"></i> {{ _("fcb.export.daily_push_btn") }}';
+    });
+}
+</script>
+{% endblock %}
+{% endblock %}

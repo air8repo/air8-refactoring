@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('tools.invoice_download.title') }} - {{ config.APP_NAME }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .loading-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .loading-content {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        text-align: center;
+        max-width: 90%;
+        width: 400px;
+    }
+
+    .loading-spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border-left-color: #0d6efd;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+        font-size: 1.1rem;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+
+    .loading-subtext {
+        font-size: 0.9rem;
+        color: #666;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{{ _('tools.invoice_download.title') }}</h1>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fa fa-file-text-o"></i> {{ _('tools.invoice_download.title') }}</h5>
+            </div>
+            <div class="card-body">
+                <form id="invoiceDownloadForm" method="POST" action="{{ url_for('tools.invoice_download_post') }}">
+                    <div class="mb-3">
+                        <label for="financing_nos" class="form-label">{{ _('tools.invoice_download.input_label') }}</label>
+                        <textarea class="form-control" id="financing_nos" name="financing_nos" rows="10"
+                                  placeholder="{{ _('tools.invoice_download.input_placeholder') }}"></textarea>
+                        <div class="form-text">{{ _('tools.invoice_download.input_help') }}</div>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-download"></i> {{ _('tools.invoice_download.download_btn') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fa fa-info-circle"></i> {{ _('tools.invoice_download.instructions_title') }}</h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>{{ _('tools.invoice_download.instruction_1') }}</li>
+                    <li>{{ _('tools.invoice_download.instruction_2') }}</li>
+                    <li>{{ _('tools.invoice_download.instruction_3') }}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">{{ _('tools.invoice_download.processing') }}</div>
+        <div class="loading-subtext">{{ _('tools.invoice_download.please_wait') }}</div>
+    </div>
+</div>
+
+<!-- Hidden iframe for file download -->
+<iframe id="downloadFrame" style="display: none;"></iframe>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('invoiceDownloadForm');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const downloadFrame = document.getElementById('downloadFrame');
+
+        loadingOverlay.classList.remove('active');
+
+        function hideLoadingOverlay() {
+            loadingOverlay.classList.remove('active');
+            if (window.invoiceTimeout) {
+                clearTimeout(window.invoiceTimeout);
+                window.invoiceTimeout = null;
+            }
+            if (window.invoicePolling) {
+                clearInterval(window.invoicePolling);
+                window.invoicePolling = null;
+            }
+        }
+
+        downloadFrame.addEventListener('load', hideLoadingOverlay);
+        downloadFrame.addEventListener('error', hideLoadingOverlay);
+
+        form.addEventListener('submit', function(event) {
+            var text = document.getElementById('financing_nos').value.trim();
+            if (!text) {
+                event.preventDefault();
+                showMessage('{{ _("tools.invoice_download.no_input") }}', 'warning');
+                return;
+            }
+
+            event.preventDefault();
+            loadingOverlay.classList.add('active');
+
+            // Clone form and submit via iframe for file download
+            var tempForm = form.cloneNode(true);
+            tempForm.target = 'downloadFrame';
+            tempForm.style.display = 'none';
+            document.body.appendChild(tempForm);
+            tempForm.submit();
+
+            setTimeout(function() {
+                tempForm.remove();
+            }, 1000);
+
+            // Polling fallback
+            window.invoiceTimeout = setTimeout(function() {
+                window.invoicePolling = setInterval(function() {
+                    try {
+                        if (downloadFrame.contentDocument &&
+                            downloadFrame.contentDocument.readyState === 'complete') {
+                            hideLoadingOverlay();
+                        }
+                    } catch (e) {
+                        hideLoadingOverlay();
+                    }
+                }, 500);
+            }, 10000);
+        });
+
+        window.addEventListener('focus', function() {
+            if (loadingOverlay.classList.contains('active')) {
+                hideLoadingOverlay();
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

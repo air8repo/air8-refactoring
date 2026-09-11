@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('tools.create_dummy_invoice.title') }} - {{ config.APP_NAME }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{{ _('tools.create_dummy_invoice.title') }}</h1>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fa fa-plus-circle"></i> {{ _('tools.create_dummy_invoice.title') }}</h5>
+            </div>
+            <div class="card-body">
+                <form id="createDummyInvoiceForm">
+                    <div class="mb-3">
+                        <label for="buyer_code" class="form-label">{{ _('tools.create_dummy_invoice.buyer_code_label') }} <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="buyer_code" name="buyer_code"
+                               placeholder="{{ _('tools.create_dummy_invoice.buyer_code_placeholder') }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="supplier_code" class="form-label">{{ _('tools.create_dummy_invoice.supplier_code_label') }} <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="supplier_code" name="supplier_code"
+                               placeholder="{{ _('tools.create_dummy_invoice.supplier_code_placeholder') }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">{{ _('tools.create_dummy_invoice.amount_label') }} <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="amount" name="amount"
+                               placeholder="{{ _('tools.create_dummy_invoice.amount_placeholder') }}"
+                               step="0.01" min="0.01" required>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fa fa-plus"></i> {{ _('tools.create_dummy_invoice.submit_btn') }}
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Result area -->
+                <div id="resultArea" class="mt-4" style="display: none;">
+                    <hr>
+                    <h5><i class="fa fa-check-circle text-success"></i> {{ _('tools.create_dummy_invoice.result_title') }}</h5>
+                    <div id="resultContent" class="alert alert-success"></div>
+                </div>
+
+                <!-- Error area -->
+                <div id="errorArea" class="mt-4" style="display: none;">
+                    <hr>
+                    <div id="errorContent" class="alert alert-danger"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fa fa-info-circle"></i> {{ _('tools.create_dummy_invoice.instructions_title') }}</h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>{{ _('tools.create_dummy_invoice.instruction_1') }}</li>
+                    <li>{{ _('tools.create_dummy_invoice.instruction_2') }}</li>
+                    <li>{{ _('tools.create_dummy_invoice.instruction_3') }}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var form = document.getElementById('createDummyInvoiceForm');
+        var submitBtn = document.getElementById('submitBtn');
+        var resultArea = document.getElementById('resultArea');
+        var resultContent = document.getElementById('resultContent');
+        var errorArea = document.getElementById('errorArea');
+        var errorContent = document.getElementById('errorContent');
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            // Hide previous results
+            resultArea.style.display = 'none';
+            errorArea.style.display = 'none';
+
+            // Disable button and show loading
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> {{ _("tools.create_dummy_invoice.processing") }}';
+
+            var formData = new FormData(form);
+
+            fetch('{{ url_for("tools.create_dummy_invoice_post") }}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    var html = '<pre style="white-space: pre-wrap; word-break: break-all;">' +
+                               JSON.stringify(data.data, null, 2) + '</pre>';
+                    resultContent.innerHTML = html;
+                    resultArea.style.display = 'block';
+                } else {
+                    errorContent.textContent = data.message || '{{ _("tools.create_dummy_invoice.api_error") }}';
+                    errorArea.style.display = 'block';
+                }
+            })
+            .catch(function(err) {
+                errorContent.textContent = '{{ _("tools.create_dummy_invoice.api_error") }}';
+                errorArea.style.display = 'block';
+            })
+            .finally(function() {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa fa-plus"></i> {{ _("tools.create_dummy_invoice.submit_btn") }}';
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('maintenance.repayment_batch_detail_title') }} - {{ batch_date }} - {{ config.APP_NAME }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">{{ _('maintenance.repayment_batch_detail_title') }} — {{ batch_date }}</h1>
+    <a href="{{ url_for('maintenance.repayment_batches_page') }}" class="btn btn-secondary">
+        <i class="fa fa-arrow-left"></i> {{ _('maintenance.back_to_list') }}
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">{{ _('maintenance.record_count') }}: {{ records|length }}</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>{{ _('maintenance.finance_request_number') }}</th>
+                        <th>{{ _('maintenance.invoice_number') }}</th>
+                        <th>{{ _('maintenance.seller_name') }}</th>
+                        <th>{{ _('maintenance.buyer_name') }}</th>
+                        <th>{{ _('maintenance.currency') }}</th>
+                        <th>{{ _('maintenance.amount') }}</th>
+                        <th>{{ _('maintenance.settlement_amount') }}</th>
+                        <th>{{ _('maintenance.maturity_date') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr>
+                        <td>{{ record.get('finance_request_number', '') }}</td>
+                        <td>{{ record.get('seller_reference', '') }}</td>
+                        <td>{{ record.get('seller_name', '') }}</td>
+                        <td>{{ record.get('buyer_name', '') }}</td>
+                        <td>{{ record.get('currency', '') }}</td>
+                        <td>{{ record.get('amount', '') }}</td>
+                        <td>{{ record.get('settlement_amount', '') }}</td>
+                        <td>
+                            {% set md = record.get('maturity_date', '') %}
+                            {% if md and md.strftime is defined %}
+                                {{ md.strftime('%Y-%m-%d') }}
+                            {% else %}
+                                {{ md }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if records|length == 0 %}
+        <div class="text-center text-muted py-4">
+            <i class="fa fa-inbox fa-3x mb-3"></i>
+            <p>{{ _('maintenance.repayment_batch_no_records') }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

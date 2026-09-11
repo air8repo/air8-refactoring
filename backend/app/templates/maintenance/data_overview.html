@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('common.title.data_maintenance') }} - {{ config.APP_NAME }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{{ _('common.title.data_maintenance') }}</h1>
+
+<!-- 数据概览卡片 -->
+<div class="data-overview-cards mb-4">
+    <div class="card card-primary">
+        <div class="card-body">
+            <h5 class="card-title">{{ _('maintenance.onboarding_configuration') }}</h5>
+            <p class="card-text">{{ stats.onboarding_count }} {{ _('maintenance.records') }}</p>
+            <a href="{{ url_for('maintenance.view_table', table_name='onboarding') }}" class="btn btn-light btn-sm">
+                <i class="fa fa-eye"></i> {{ _('common.button.view') }}
+            </a>
+        </div>
+    </div>
+    
+    <div class="card card-success">
+        <div class="card-body">
+            <h5 class="card-title">{{ _('maintenance.financing_orders') }}</h5>
+            <p class="card-text">{{ stats.financing_count }} {{ _('maintenance.records') }}</p>
+            <a href="{{ url_for('maintenance.view_table', table_name='financing') }}" class="btn btn-light btn-sm">
+                <i class="fa fa-eye"></i> {{ _('common.button.view') }}
+            </a>
+        </div>
+    </div>
+    
+    <div class="card card-info">
+        <div class="card-body">
+            <h5 class="card-title">{{ _('maintenance.repayment_orders') }}</h5>
+            <p class="card-text">{{ stats.repayment_count }} {{ _('maintenance.records') }}</p>
+            <a href="{{ url_for('maintenance.view_table', table_name='repayment') }}" class="btn btn-light btn-sm">
+                <i class="fa fa-eye"></i> {{ _('common.button.view') }}
+            </a>
+        </div>
+    </div>
+    
+    <div class="card card-warning">
+        <div class="card-body">
+            <h5 class="card-title">{{ _('maintenance.bank_statements') }}</h5>
+            <p class="card-text">{{ stats.statement_count }} {{ _('maintenance.records') }}</p>
+            <a href="{{ url_for('maintenance.view_table', table_name='statement') }}" class="btn btn-light btn-sm">
+                <i class="fa fa-eye"></i> {{ _('common.button.view') }}
+            </a>
+        </div>
+    </div>
+    
+    <div class="card card-danger">
+        <div class="card-body">
+            <h5 class="card-title">{{ _('maintenance.financing_overview') }}</h5>
+            <p class="card-text">{{ stats.overview_count }} {{ _('maintenance.records') }}</p>
+            <a href="{{ url_for('maintenance.view_table', table_name='overview') }}" class="btn btn-light btn-sm">
+                <i class="fa fa-eye"></i> {{ _('common.button.view') }}
+            </a>
+        </div>
+    </div>
+    
+    <div class="card card-secondary">
+        <div class="card-body">
+            <h5 class="card-title">{{ _('maintenance.title.batch_management') }}</h5>
+            <p class="card-text">{{ stats.batch_count if stats.batch_count is defined else 0 }} {{ _('maintenance.batches') }}</p>
+            <a href="{{ url_for('maintenance.batch_list') }}" class="btn btn-light btn-sm">
+                <i class="fa fa-eye"></i> {{ _('common.button.view') }}
+            </a>
+        </div>
+    </div>
+    
+    <div class="card card-dark">
+        <div class="card-body">
+            <h5 class="card-title">{{ _('maintenance.title.repayment_batches') }}</h5>
+            <p class="card-text">{{ stats.repayment_batch_count }} {{ _('maintenance.batches') }}</p>
+            <a href="{{ url_for('maintenance.repayment_batches_page') }}" class="btn btn-light btn-sm">
+                <i class="fa fa-eye"></i> {{ _('common.button.view') }}
+            </a>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- 操作说明 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0"><i class="fa fa-info-circle"></i> {{ _('maintenance.operation_instructions') }}</h5>
+    </div>
+    <div class="card-body">
+        <ul>
+            <li>{{ _('maintenance.view_data_desc') }}</li>
+            <li>{{ _('maintenance.edit_delete_desc') }}</li>
+
+        </ul>
+    </div>
+</div>
+{% endblock %}

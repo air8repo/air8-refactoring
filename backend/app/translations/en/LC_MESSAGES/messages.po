@@ -1,0 +1,325 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-01-05 18:31+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "仪表盘"
+msgstr "Dashboard"
+
+msgid "数据管理"
+msgstr "Data Management"
+
+msgid "数据导入"
+msgstr "Data Import"
+
+msgid "数据维护"
+msgstr "Data Maintenance"
+
+msgid "数据聚合"
+msgstr "Data Aggregation"
+
+msgid "数据导出"
+msgstr "Data Export"
+
+msgid "设置"
+msgstr "Settings"
+
+msgid "退出登录"
+msgstr "Logout"
+
+msgid "语言"
+msgstr "Language"
+
+msgid "中文"
+msgstr "Chinese"
+
+msgid "English"
+msgstr "English"
+
+msgid "登录"
+msgstr "Login"
+
+msgid "用户登录"
+msgstr "User Login"
+
+msgid "请输入用户名"
+msgstr "Please enter username"
+
+msgid "请输入密码"
+msgstr "Please enter password"
+
+msgid "导出数据"
+msgstr "Export Data"
+
+msgid "数据类型"
+msgstr "Data Type"
+
+msgid "请选择数据类型"
+msgstr "Please select data type"
+
+msgid "融资订单"
+msgstr "Financing Orders"
+
+msgid "还款订单"
+msgstr "Repayment Orders"
+
+msgid "银行对账单"
+msgstr "Bank Statements"
+
+msgid "融资概览"
+msgstr "Financing Overview"
+
+msgid "请选择要导出的数据类型"
+msgstr "Please select the data type to export"
+
+msgid "导出格式"
+msgstr "Export Format"
+
+msgid "请选择导出格式"
+msgstr "Please select export format"
+
+msgid "选择导出文件的格式"
+msgstr "Select the export file format"
+
+msgid "过滤条件（可选）"
+msgstr "Filter Conditions (Optional)"
+
+msgid "融资申请号"
+msgstr "Finance Request Number"
+
+msgid "输入融资申请号"
+msgstr "Enter finance request number"
+
+msgid "根据融资申请号过滤数据"
+msgstr "Filter data by finance request number"
+
+msgid "发票号"
+msgstr "Invoice Number"
+
+msgid "输入发票号"
+msgstr "Enter invoice number"
+
+msgid "根据发票号过滤数据"
+msgstr "Filter data by invoice number"
+
+msgid "开始导出"
+msgstr "Start Export"
+
+msgid "生成DB放款文件"
+msgstr "Generate DB Loan File"
+
+msgid "批次日期"
+msgstr "Batch Date"
+
+msgid "请输入批次日期，格式：YYYY-MM-DD"
+msgstr "Please enter batch date, format: YYYY-MM-DD"
+
+msgid "银行渠道"
+msgstr "Bank Channel"
+
+msgid "选择银行渠道，默认DB"
+msgstr "Select bank channel, default DB"
+
+msgid "导出说明"
+msgstr "Export Instructions"
+
+msgid "导出格式说明"
+msgstr "Export Format Instructions"
+
+msgid "适合进行数据分析和编辑，支持复杂数据结构"
+msgstr "Suitable for data analysis and editing, supports complex data structures"
+
+msgid "适合导入到其他系统，文件体积小，兼容性好"
+msgstr "Suitable for importing into other systems, small file size, good compatibility"
+
+msgid "适合打印和归档，数据不可编辑"
+msgstr "Suitable for printing and archiving, data cannot be edited"
+
+msgid "导出注意事项"
+msgstr "Export Notes"
+
+msgid "导出数据量较大时可能需要较长时间，请耐心等待"
+msgstr "Exporting large amounts of data may take a long time, please be patient"
+
+msgid "建议使用过滤条件来减少导出数据量"
+msgstr "It is recommended to use filter conditions to reduce the amount of exported data"
+
+msgid "导出文件将包含所选数据类型的所有字段"
+msgstr "The exported file will contain all fields of the selected data type"
+
+msgid "导出完成后，浏览器会自动下载文件"
+msgstr "After export is complete, the browser will automatically download the file"
+
+msgid "上传Excel文件"
+msgstr "Upload Excel File"
+
+msgid "导入类型"
+msgstr "Import Type"
+
+msgid "Onboarding配置"
+msgstr "Onboarding Configuration"
+
+msgid "选择文件"
+msgstr "Select File"
+
+msgid "支持 .xlsx 和 .xls 格式的Excel文件"
+msgstr "Supports .xlsx and .xls format Excel files"
+
+msgid "仅验证数据，不导入"
+msgstr "Validate data only, do not import"
+
+msgid "勾选此项将只验证文件格式和数据完整性，不会将数据导入到数据库"
+msgstr "Checking this item will only verify file format and data integrity, and will not import data into the database"
+
+msgid "开始导入"
+msgstr "Start Import"
+
+msgid "导入说明"
+msgstr "Import Instructions"
+
+msgid "导入前准备"
+msgstr "Pre-import Preparation"
+
+msgid "确保Excel文件格式与模板一致"
+msgstr "Ensure the Excel file format is consistent with the template"
+
+msgid "必填字段不能为空"
+msgstr "Required fields cannot be empty"
+
+msgid "日期格式应为YYYY-MM-DD或YYYY/MM/DD"
+msgstr "Date format should be YYYY-MM-DD or YYYY/MM/DD"
+
+msgid "数值字段不应包含特殊字符或货币符号"
+msgstr "Numeric fields should not contain special characters or currency symbols"
+
+msgid "导入后注意事项"
+msgstr "Post-import Notes"
+
+msgid "系统将自动清洗和验证数据"
+msgstr "The system will automatically clean and validate data"
+
+msgid "重复记录将被去重，保留最新的记录"
+msgstr "Duplicate records will be deduplicated, keeping the latest records"
+
+msgid "导入完成后建议进行数据聚合，生成最新的融资概览数据"
+msgstr "It is recommended to perform data aggregation after import to generate the latest financing overview data"
+
+msgid "数据维护"
+msgstr "Data Maintenance"
+
+msgid "条记录"
+msgstr "records"
+
+msgid "查看"
+msgstr "View"
+
+msgid "数据聚合操作"
+msgstr "Data Aggregation Operation"
+
+msgid "执行数据聚合将表2、表3和表4的数据合并到表5（融资概览）中。"
+msgstr "Execute data aggregation to merge data from tables 2, 3, and 4 into table 5 (Financing Overview)."
+
+msgid "执行数据聚合"
+msgstr "Execute Data Aggregation"
+
+msgid "操作说明"
+msgstr "Operation Instructions"
+
+msgid "点击各表的\"查看\"按钮可以查看和管理表中的数据"
+msgstr "Click the \"View\" button for each table to view and manage data in the table"
+
+msgid "在表数据页面，您可以编辑、删除单条记录"
+msgstr "On the table data page, you can edit and delete individual records"
+
+msgid "执行数据聚合前，请确保表2、表3和表4的数据已经导入和清洗完成"
+msgstr "Before executing data aggregation, please ensure that the data in tables 2, 3, and 4 has been imported and cleaned"
+
+msgid "建议定期执行数据聚合，保持表5数据的准确性"
+msgstr "It is recommended to perform data aggregation regularly to maintain the accuracy of table 5 data"
+
+msgid "暂无数据"
+msgstr "No data available"
+
+msgid "最近融资订单"
+msgstr "Recent Financing Orders"
+
+msgid "状态"
+msgstr "Status"
+
+msgid "金额"
+msgstr "Amount"
+
+msgid "最近还款记录"
+msgstr "Recent Repayment Records"
+
+msgid "还款金额"
+msgstr "Repayment Amount"
+
+msgid "数据分布"
+msgstr "Data Distribution"
+
+msgid "最近融资订单金额"
+msgstr "Recent Financing Order Amounts"
+
+msgid "逾期融资单统计"
+msgstr "Overdue Financing Orders Statistics"
+
+msgid "逾期融资单个数"
+msgstr "Number of Overdue Financing Orders"
+
+msgid "平均逾期天数"
+msgstr "Average Overdue Days"
+
+msgid "逾期个数"
+msgstr "Number of Overdue"
+
+msgid "平均逾期天数（天）"
+msgstr "Average Overdue Days (days)"
+
+msgid "月份"
+msgstr "Month"
+
+msgid "天"
+msgstr "days"
+
+msgid "每月有对账单的融资单统计"
+msgstr "Monthly Statistics of Financing Orders with Statements"
+
+msgid "供应商过滤"
+msgstr "Supplier Filter"
+
+msgid "所有供应商"
+msgstr "All Suppliers"
+
+msgid "选择供应商查看特定供应商的数据"
+msgstr "Select supplier to view data for specific supplier"
+
+msgid "有对账单的融资单个数"
+msgstr "Number of Financing Orders with Statements"
+
+msgid "融资单个数"
+msgstr "Number of Financing Orders"
+
+msgid "获取数据失败"
+msgstr "Failed to get data"
+
+msgid "批次管理"
+msgstr "Batch Management"
+
+msgid "个批次"
+msgstr "batches"
+
+msgid "还款批次管理"
+msgstr "Repayment Batch Management"
+
+msgid "管理DB还款批次"
+msgstr "Manage DB Repayment Batches"

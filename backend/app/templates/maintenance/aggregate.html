@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('common.title.data_aggregation') }} - {{ config.APP_NAME }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{{ _('common.title.data_aggregation') }}</h1>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fa fa-refresh"></i> {{ _('common.button.execute_aggregation') }}
+        </h5>
+    </div>
+    <div class="card-body">
+        <p>{{ _('maintenance.aggregation_description') }}</p>
+        
+        <form method="POST" action="{{ url_for('maintenance.run_aggregate') }}">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="aggregate_type" id="full_aggregate" value="full" checked>
+                        <label class="form-check-label" for="full_aggregate">
+                            {{ _('maintenance.full_aggregation') }}
+                        </label>
+                    </div>
+                    <div class="form-text">{{ _('maintenance.full_aggregation_description') }}</div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="aggregate_type" id="partial_aggregate" value="partial">
+                        <label class="form-check-label" for="partial_aggregate">
+                            {{ _('maintenance.partial_aggregation') }}
+                        </label>
+                    </div>
+                    <div class="form-text">{{ _('maintenance.partial_aggregation_description') }}</div>
+                </div>
+            </div>
+            
+            <div class="mb-3" id="finance_request_number_div" style="display: none;">
+                <label for="finance_request_number" class="form-label">{{ _('maintenance.finance_request_number_div') }}</label>
+                <input type="text" class="form-control" id="finance_request_number" name="finance_request_number" placeholder="{{ _('maintenance.enter_finance_request_number') }}">
+                <div class="form-text">{{ _('maintenance.enter_finance_request_number') }}</div>
+            </div>
+            
+            <div class="d-flex">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa fa-refresh"></i> {{ _('common.button.start') }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 聚合说明 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0"><i class="fa fa-info-circle"></i> {{ _('maintenance.execute_aggregation') }}</h5>
+    </div>
+    <div class="card-body">
+        <h6>{{ _('maintenance.operation_instructions') }}：</h6>
+        <ol>
+            <li>{{ _('maintenance.aggregation_step_1') }}</li>
+            <li>{{ _('maintenance.aggregation_step_2') }}</li>
+            <li>{{ _('maintenance.aggregation_step_3') }}</li>
+            <li>{{ _('maintenance.aggregation_step_4') }}</li>
+            <li>{{ _('maintenance.aggregation_step_5') }}</li>
+        </ol>
+        
+        <h6>{{ _('maintenance.notes') }}：</h6>
+        <ul>
+            <li>{{ _('maintenance.aggregation_note_1') }}</li>
+            <li>{{ _('maintenance.aggregation_note_2') }}</li>
+            <li>{{ _('maintenance.aggregation_note_3') }}</li>
+            <li>{{ _('maintenance.aggregation_note_4') }}</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 监听聚合类型变化，显示/隐藏融资申请号输入框
+    document.querySelectorAll('input[name="aggregate_type"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const financeRequestNumberDiv = document.getElementById('finance_request_number_div');
+            if (this.value === 'partial') {
+                financeRequestNumberDiv.style.display = 'block';
+                document.getElementById('finance_request_number').required = true;
+            } else {
+                financeRequestNumberDiv.style.display = 'none';
+                document.getElementById('finance_request_number').required = false;
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('common.title.dashboard') }} - {{ config.APP_NAME }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 统计卡片样式优化 */
+    .stat-card {
+        transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .stat-icon {
+        font-size: 3rem;
+        opacity: 0.8;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 400px;
+        margin: var(--spacing-xl) 0;
+    }
+    
+    .chart-card {
+        margin-bottom: var(--spacing-xl);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{{ _('common.title.dashboard') }}</h1>
+
+<!-- 数据统计卡片 -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card stat-card-primary">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-3">
+                        <i class="fa fa-file-excel-o stat-icon"></i>
+                    </div>
+                    <div class="col-9 text-end">
+                        <div class="text-sm">{{ _('export.financing_orders') }}</div>
+                        <div class="h3">{{ stats.financing_count }}</div>
+                        <div class="text-sm">{{ _('common.table.records') }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card stat-card-success">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-3">
+                        <i class="fa fa-credit-card stat-icon"></i>
+                    </div>
+                    <div class="col-9 text-end">
+                        <div class="text-sm">{{ _('export.repayment_orders') }}</div>
+                        <div class="h3">{{ stats.repayment_count }}</div>
+                        <div class="text-sm">{{ _('common.table.records') }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card stat-card-info">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-3">
+                        <i class="fa fa-bank stat-icon"></i>
+                    </div>
+                    <div class="col-9 text-end">
+                        <div class="text-sm">{{ _('export.bank_statements') }}</div>
+                        <div class="h3">{{ stats.statement_count }}</div>
+                        <div class="text-sm">{{ _('common.table.records') }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card stat-card-warning">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-3">
+                        <i class="fa fa-chart-line stat-icon"></i>
+                    </div>
+                    <div class="col-9 text-end">
+                        <div class="text-sm">{{ _('export.financing_overview') }}</div>
+                        <div class="h3">{{ stats.overview_count }}</div>
+                        <div class="text-sm">{{ _('common.table.records') }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 数据可视化图表 -->
+<div class="row">
+    <!-- 数据分布饼图 -->
+    <div class="col-md-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fa fa-pie-chart"></i> {{ _('dashboard.data_distribution') }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="dataDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- DB Disbursement报表 -->
+    <div class="col-md-6">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fa fa-money"></i> {{ _('dashboard.db_disbursement') }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>{{ _('dashboard.batch_number') }}</th>
+                                <th>{{ _('dashboard.finance_details_start_date') }}</th>
+                                <th>{{ _('dashboard.sum_finance_amount') }}</th>
+                                <th>{{ _('dashboard.sum_interest_amount') }}</th>
+                                <th>{{ _('dashboard.sum_purchase_price') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="db_disbursement_body">
+                            {% for batch in db_disbursement.batches %}
+                            {% set disbursement = db_disbursement.disbursement[batch] %}
+                            <tr>
+                                <td>{{ batch }}</td>
+                                <td>{{ disbursement.start_date.strftime('%Y-%m-%d') if disbursement.start_date else '' }}</td>
+                                <td>{{ "%.2f"|format(disbursement.finance_amount_sum) }}</td>
+                                <td>{{ "%.2f"|format(disbursement.interest_amount_sum) }}</td>
+                                <td>{{ "%.2f"|format(disbursement.purchase_price_sum) }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center">{{ _('common.table.no_data') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Settlement Schedule报表 -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card chart-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fa fa-calendar"></i> {{ _('dashboard.settlement_schedule') }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3 row">
+                    <div class="col-md-3">
+                        <label for="outstanding_filter" class="form-label">{{ _('dashboard.outstanding_amount_filter') }}</label>
+                        <select class="form-select" id="outstanding_filter">
+                            <option value="all">{{ _('dashboard.all') }}</option>
+                            <option value="filter_zero">{{ _('dashboard.filter_zero') }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>{{ _('dashboard.due_date') }}</th>
+                                <th>{{ _('dashboard.db_loan_amt') }}</th>
+                                <th>{{ _('dashboard.repayment_from_buyer') }}</th>
+                                <th>{{ _('dashboard.os_amt_in_db') }}</th>
+                                <th>{{ _('dashboard.settled_amt_by_air8') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="settlement_schedule_body">
+                            {% for due_date in settlement_schedule.due_dates %}
+                            {% set totals = settlement_schedule.totals[due_date] %}
+                            <tr>
+                                <td>{{ due_date }}</td>
+                                <td>{{ "%.2f"|format(totals.db_loan_amt) }}</td>
+                                <td>{{ "%.2f"|format(totals.repayment_from_buyer) }}</td>
+                                <td>{{ "%.2f"|format(totals.os_amt_in_db) }}</td>
+                                <td>{{ "%.2f"|format(totals.settled_amt_by_air8) }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center">{{ _('common.table.no_data') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 版本信息 -->
+<div class="container-fluid mt-5 mb-3">
+    <div class="row">
+        <div class="col-md-12 text-center text-muted">
+            <p class="small">Version: {{ latest_commit if latest_commit else 'Unknown' }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // 图表主题配置
+    const chartTheme = {
+        dark: {
+            color: '#f9fafb', // 文本颜色
+            gridColor: '#374151', // 网格线颜色
+            backgroundColor: 'transparent', // 图表背景色
+            legendColor: '#f9fafb', // 图例文本颜色
+            tooltipColor: '#f9fafb', // 提示框文本颜色
+            tooltipBgColor: '#1f2937', // 提示框背景色
+            tooltipBorderColor: '#374151' // 提示框边框色
+        },
+        light: {
+            color: '#111827',
+            gridColor: '#e5e7eb',
+            backgroundColor: 'transparent',
+            legendColor: '#111827',
+            tooltipColor: '#111827',
+            tooltipBgColor: '#ffffff',
+            tooltipBorderColor: '#e5e7eb'
+        }
+    };
+    
+    // 根据当前主题应用样式
+    const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+    const currentTheme = isDarkTheme ? chartTheme.dark : chartTheme.light;
+    
+    // 数据分布饼图
+    const dataDistributionCtx = document.getElementById('dataDistributionChart').getContext('2d');
+    const dataDistributionChart = new Chart(dataDistributionCtx, {
+        type: 'pie',
+        data: {
+            labels: ['{{ _('export.financing_orders') }}', '{{ _('export.repayment_orders') }}', '{{ _('export.bank_statements') }}', '{{ _('export.financing_overview') }}'],
+            datasets: [{
+                label: '{{ _('dashboard.data_distribution') }}',
+                data: [{{ stats.financing_count }}, {{ stats.repayment_count }}, {{ stats.statement_count }}, {{ stats.overview_count }}],
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(255, 206, 86, 0.8)',
+                    'rgba(255, 99, 132, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(255, 99, 132, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        color: currentTheme.legendColor // 图例文本颜色
+                    }
+                },
+                tooltip: {
+                    backgroundColor: currentTheme.tooltipBgColor,
+                    titleColor: currentTheme.tooltipColor,
+                    bodyColor: currentTheme.tooltipColor,
+                    borderColor: currentTheme.tooltipBorderColor,
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed !== null) {
+                                label += context.parsed;
+                                label += ' {{ _('common.table.records') }}';
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // 主题切换时更新图表主题
+    document.addEventListener('theme-change', function() {
+        // 重新获取主题
+        const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+        const newTheme = isDarkTheme ? chartTheme.dark : chartTheme.light;
+        
+        // 更新数据分布饼图
+        dataDistributionChart.options.plugins.legend.labels.color = newTheme.legendColor;
+        dataDistributionChart.options.plugins.tooltip.backgroundColor = newTheme.tooltipBgColor;
+        dataDistributionChart.options.plugins.tooltip.titleColor = newTheme.tooltipColor;
+        dataDistributionChart.options.plugins.tooltip.bodyColor = newTheme.tooltipColor;
+        dataDistributionChart.options.plugins.tooltip.borderColor = newTheme.tooltipBorderColor;
+        
+        // 更新图表
+        dataDistributionChart.update();
+    });
+    
+    // Settlement Schedule过滤功能
+    document.getElementById('outstanding_filter').addEventListener('change', function() {
+        const filterZero = this.value === 'filter_zero';
+        
+        // 发送AJAX请求获取过滤后的数据
+        fetch(`/api/get_settlement_schedule?filter_zero=${filterZero}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 0) {
+                    const schedule = data.data;
+                    const tbody = document.getElementById('settlement_schedule_body');
+                    
+                    // 清空现有数据
+                    tbody.innerHTML = '';
+                    
+                    // 添加新数据
+                    schedule.due_dates.forEach(due_date => {
+                        const totals = schedule.totals[due_date];
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${due_date}</td>
+                            <td>${totals.db_loan_amt.toFixed(2)}</td>
+                            <td>${totals.repayment_from_buyer.toFixed(2)}</td>
+                            <td>${totals.os_amt_in_db.toFixed(2)}</td>
+                            <td>${totals.settled_amt_by_air8.toFixed(2)}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('{{ _('common.message.failed_get_data') }}:', error);
+            });
+    });
+</script>
+{% endblock %}

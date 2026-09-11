@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('common.button.edit') }}{{ table_name }} {{ _('maintenance.edit.document') }} - {{ config.APP_NAME }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-group {
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .form-label {
+        font-weight: var(--font-weight-semibold);
+    }
+
+    .nested-object {
+        background-color: var(--bg-secondary);
+        padding: var(--spacing-lg);
+        border-radius: var(--border-radius-md);
+        margin: var(--spacing-md) 0;
+        border: 1px solid var(--border-color);
+    }
+
+    .array-item {
+        background-color: var(--bg-tertiary);
+        padding: var(--spacing-md);
+        border-radius: var(--border-radius-sm);
+        margin: var(--spacing-xs) 0;
+        border: 1px solid var(--border-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{{ _('common.button.edit') }}{{ table_name }} {{ _('maintenance.edit.document') }}</h1>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fa fa-edit"></i> {{ _('maintenance.edit.edit_record') }}
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('maintenance.edit_document', table_name=table_name, doc_id=doc_id) }}">
+            {% for key, value in doc.items() %}
+                {% if key != '_id' %}
+                    <div class="form-group">
+                        <label for="{{ key }}" class="form-label">{{ key }}</label>
+
+                        {% if value is mapping %}
+                            <!-- 处理嵌套对象 -->
+                            <div class="nested-object">
+                                <p class="text-muted">{{ _('maintenance.edit.nested_not_supported') }}</p>
+                                <pre>{{ value|tojson(indent=2) }}</pre>
+                            </div>
+                        {% elif value is iterable and value is not string %}
+                            <!-- 处理数组 -->
+                            <div class="array-item">
+                                <p class="text-muted">{{ _('maintenance.edit.array_not_supported') }}</p>
+                                <pre>{{ value|tojson(indent=2) }}</pre>
+                            </div>
+                        {% elif value is boolean %}
+                            <!-- 处理布尔值 -->
+                            <select class="form-select" id="{{ key }}" name="{{ key }}">
+                                <option value="true" {% if value %}selected{% endif %}>True</option>
+                                <option value="false" {% if not value %}selected{% endif %}>False</option>
+                            </select>
+                        {% elif value is number %}
+                            <!-- 处理数值 -->
+                            <input type="number" class="form-control" id="{{ key }}" name="{{ key }}" value="{{ value }}" step="any">
+                        {% elif value is string and value|length > 100 %}
+                            <!-- 处理长字符串 -->
+                            <textarea class="form-control" id="{{ key }}" name="{{ key }}" rows="3">{{ value }}</textarea>
+                        {% elif value is string %}
+                            <!-- 处理短字符串 -->
+                            <input type="text" class="form-control" id="{{ key }}" name="{{ key }}" value="{{ value }}">
+                        {% else %}
+                            <!-- 处理其他类型 -->
+                            <input type="text" class="form-control" id="{{ key }}" name="{{ key }}" value="{{ value }}">
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa fa-save"></i> {{ _('common.button.save_changes') }}
+                </button>
+                <a href="{{ url_for('maintenance.view_table', table_name=table_name) }}" class="btn btn-secondary">
+                    <i class="fa fa-times"></i> {{ _('common.button.cancel') }}
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0"><i class="fa fa-info-circle"></i> {{ _('maintenance.edit.instructions') }}</h5>
+    </div>
+    <div class="card-body">
+        <ul>
+            <li>{{ _('maintenance.edit.supports_simple_types') }}</li>
+            <li>{{ _('maintenance.edit.nested_not_editable') }}</li>
+            <li>{{ _('maintenance.edit.save_immediate') }}</li>
+            <li>{{ _('maintenance.edit.backup_suggestion') }}</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

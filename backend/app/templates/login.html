@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('common.title.login') }} - {{ config.APP_NAME }}{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="card-header card-primary">
+            <h4 class="mb-0"><i class="fa fa-sign-in"></i> {{ _('common.user.user_login') }}</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('auth.login') }}">
+                {{ form.hidden_tag() }}
+                
+                <div class="mb-4">
+                    <label for="username" class="form-label">{{ _('common.user.username') }}</label>
+                    {{ form.username(class="form-control", placeholder=_('common.user.enter_username')) }}
+                    {% for error in form.username.errors %}
+                        <div class="text-danger mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                
+                <div class="mb-4">
+                    <label for="password" class="form-label">{{ _('common.user.password') }}</label>
+                    {{ form.password(class="form-control", placeholder=_('common.user.enter_password')) }}
+                    {% for error in form.password.errors %}
+                        <div class="text-danger mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                
+                <div class="mb-4 form-check">
+                    {{ form.remember(class="form-check-input") }}
+                    <label class="form-check-label" for="remember">{{ _('common.user.remember') }}</label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100">{{ _('common.button.login') }}</button>
+            </form>
+            
+            <div class="mt-4 text-center">
+                <p>{{ _('common.user.no_account') }} <a href="{{ url_for('auth.register') }}">{{ _('common.user.register_now') }}</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

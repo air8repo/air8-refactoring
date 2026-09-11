@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('common.title.tools') }} - {{ config.APP_NAME }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{{ _('common.title.tools') }}</h1>
+
+<div class="row">
+    <!-- 导出发票文件 -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fa fa-file-text-o"></i> {{ _('tools.invoice_download.title') }}</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ _('tools.invoice_download.description') }}</p>
+                <a href="{{ url_for('tools.invoice_download') }}" class="btn btn-primary">
+                    <i class="fa fa-arrow-right"></i> {{ _('tools.open_tool') }}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建Dummy发票 -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fa fa-plus-circle"></i> {{ _('tools.create_dummy_invoice.title') }}</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ _('tools.create_dummy_invoice.description') }}</p>
+                <a href="{{ url_for('tools.create_dummy_invoice') }}" class="btn btn-primary">
+                    <i class="fa fa-arrow-right"></i> {{ _('tools.open_tool') }}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Future tools will be added here as additional cards -->
+</div>
+{% endblock %}
