@@ -128,35 +128,14 @@
                 <h5 class="card-title mb-0"><i class="fa fa-money"></i> {{ _('dashboard.db_disbursement') }}</h5>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>{{ _('dashboard.batch_number') }}</th>
-                                <th>{{ _('dashboard.finance_details_start_date') }}</th>
-                                <th>{{ _('dashboard.sum_finance_amount') }}</th>
-                                <th>{{ _('dashboard.sum_interest_amount') }}</th>
-                                <th>{{ _('dashboard.sum_purchase_price') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody id="db_disbursement_body">
-                            {% for batch in db_disbursement.batches %}
-                            {% set disbursement = db_disbursement.disbursement[batch] %}
-                            <tr>
-                                <td>{{ batch }}</td>
-                                <td>{{ disbursement.start_date.strftime('%Y-%m-%d') if disbursement.start_date else '' }}</td>
-                                <td>{{ "%.2f"|format(disbursement.finance_amount_sum) }}</td>
-                                <td>{{ "%.2f"|format(disbursement.interest_amount_sum) }}</td>
-                                <td>{{ "%.2f"|format(disbursement.purchase_price_sum) }}</td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="5" class="text-center">{{ _('common.table.no_data') }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                {% if db_disbursement.months %}
+                <div class="chart-container">
+                    <canvas id="dbDisbursementChart" aria-label="{{ _('dashboard.db_disbursement') }}"></canvas>
                 </div>
+                <script id="dbDisbursementData" type="application/json">{{ db_disbursement|tojson }}</script>
+                {% else %}
+                <div class="text-center py-5">{{ _('common.table.no_data') }}</div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -256,6 +235,64 @@
     // 根据当前主题应用样式
     const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
     const currentTheme = isDarkTheme ? chartTheme.dark : chartTheme.light;
+
+    // DB Disbursement月度平均折线图
+    let dbDisbursementChart = null;
+    {% if db_disbursement.months %}
+    const dbDisbursementData = JSON.parse(document.getElementById('dbDisbursementData').textContent);
+    const dbDisbursementCtx = document.getElementById('dbDisbursementChart').getContext('2d');
+    dbDisbursementChart = new Chart(dbDisbursementCtx, {
+        type: 'line',
+        data: {
+            labels: dbDisbursementData.months,
+            datasets: [{
+                label: {{ _('dashboard.average_disbursement_amount')|tojson }},
+                data: dbDisbursementData.series.disbursement_amount,
+                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderWidth: 2,
+                tension: 0.1,
+                fill: false
+            }, {
+                label: {{ _('dashboard.average_interest')|tojson }},
+                data: dbDisbursementData.series.interest,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderWidth: 2,
+                tension: 0.1,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    ticks: { color: currentTheme.color },
+                    grid: { color: currentTheme.gridColor }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: currentTheme.color },
+                    grid: { color: currentTheme.gridColor }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { color: currentTheme.legendColor }
+                },
+                tooltip: {
+                    backgroundColor: currentTheme.tooltipBgColor,
+                    titleColor: currentTheme.tooltipColor,
+                    bodyColor: currentTheme.tooltipColor,
+                    borderColor: currentTheme.tooltipBorderColor,
+                    borderWidth: 1
+                }
+            }
+        }
+    });
+    {% endif %}
     
     // 数据分布饼图
     const dataDistributionCtx = document.getElementById('dataDistributionChart').getContext('2d');
@@ -327,6 +364,20 @@
         dataDistributionChart.options.plugins.tooltip.titleColor = newTheme.tooltipColor;
         dataDistributionChart.options.plugins.tooltip.bodyColor = newTheme.tooltipColor;
         dataDistributionChart.options.plugins.tooltip.borderColor = newTheme.tooltipBorderColor;
+
+        // 更新 DB Disbursement 折线图（仅在有数据时初始化）
+        if (dbDisbursementChart) {
+            dbDisbursementChart.options.scales.x.ticks.color = newTheme.color;
+            dbDisbursementChart.options.scales.x.grid.color = newTheme.gridColor;
+            dbDisbursementChart.options.scales.y.ticks.color = newTheme.color;
+            dbDisbursementChart.options.scales.y.grid.color = newTheme.gridColor;
+            dbDisbursementChart.options.plugins.legend.labels.color = newTheme.legendColor;
+            dbDisbursementChart.options.plugins.tooltip.backgroundColor = newTheme.tooltipBgColor;
+            dbDisbursementChart.options.plugins.tooltip.titleColor = newTheme.tooltipColor;
+            dbDisbursementChart.options.plugins.tooltip.bodyColor = newTheme.tooltipColor;
+            dbDisbursementChart.options.plugins.tooltip.borderColor = newTheme.tooltipBorderColor;
+            dbDisbursementChart.update();
+        }
         
         // 更新图表
         dataDistributionChart.update();

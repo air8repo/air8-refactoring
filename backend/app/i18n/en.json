@@ -183,5 +183,7 @@
   "fcb.export.instruction_3": "Single client downloads as Excel, multiple clients as ZIP file",
   "fcb.export.daily_push_title": "Daily Scheduled Push",
   "fcb.export.daily_push_desc": "Manually trigger the daily FCB data push task",
-  "fcb.export.daily_push_btn": "Trigger Push"
+  "fcb.export.daily_push_btn": "Trigger Push",
+  "dashboard.average_disbursement_amount": "Average Disbursement Amount",
+  "dashboard.average_interest": "Average Interest"
 }

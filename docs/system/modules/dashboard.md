@@ -21,7 +21,7 @@
 从 `refactoring_financing_overview` 按 `due_date` 分组，汇总 DB 贷款金额、买方还款、未结金额、Air8 已结算金额。支持 `filter_zero` 参数过滤零欠款。
 
 ### DB Disbursement 报表
-按 `loan_submission_batch` 分组，汇总融资金额、利息金额、购买价格。
+从 `refactoring_financing_overview` 查询 `refactoring_status: "Loan booked"` 的记录，使用每条记录 `bank_statements[0]` 的 Finance Details Start Date 按 Asia/Shanghai 日历月份分组，返回每月平均融资金额和平均利息两个序列。没有数据的月份不生成点；空结果保持现有空数据默认行为。
 
 ### 辅助统计
 - `get_overdue_stats` — 按月统计逾期融资单数量和平均逾期天数

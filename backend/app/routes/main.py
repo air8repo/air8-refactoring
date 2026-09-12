@@ -341,91 +341,104 @@ def get_settlement_schedule(filter_zero=False):
 
 
 def get_db_disbursement():
-    """获取DB放款报表数据
-    
-    Returns:
-        dict: DB放款报表数据
-    """
+    """获取按月平均的 DB 放款图表数据。"""
     mongo = get_mongo()
     if mongo is None:
-        return {'batches': [], 'totals': {}}
+        return {
+            'months': [],
+            'series': {'disbursement_amount': [], 'interest': []}
+        }
     
     # 仅统计已放款（及之后结算阶段）的记录，与重构前的 finance.status == 'Loan booked' 过滤口径保持一致
     overview_data = list(mongo.refactoring_financing_overview.find({'refactoring_status': 'Loan booked'}))
     
-    # 按批次号分组汇总
+    # 按 Finance Details Start Date 的 Asia/Shanghai 日历月份分组并求平均值。
     disbursement = defaultdict(lambda: {
-        'start_date': None,
-        'finance_amount_sum': 0,
-        'interest_amount_sum': 0,
-        'purchase_price_sum': 0
+        'finance_amount_sum': 0.0,
+        'interest_amount_sum': 0.0,
+        'sample_count': 0
     })
+    shanghai_timezone = __import__('pytz').timezone('Asia/Shanghai')
     
     for item in overview_data:
+        # Keep the read-time eligibility boundary even when a mocked or
+        # alternate Mongo adapter returns records outside the query filter.
+        if item.get('refactoring_status') != 'Loan booked':
+            continue
+
         # 获取批次号
         batch_number = item.get('loan_submission_batch')
         if not batch_number:
             continue
         
-        # 从bank_statements[0]获取数据
+        # 从 bank_statements[0] 获取最新的扁平化快照。
         bank_statements = item.get('bank_statements', [])
-        if bank_statements:
-            bank_statement = bank_statements[0]
-            
-            # 安全转换函数，处理Decimal128和其他类型
-            def safe_to_float(value):
-                if value is None:
-                    return 0.0
-                
-                # 处理Decimal128类型
-                from bson import Decimal128
-                if isinstance(value, Decimal128):
-                    return float(value.to_decimal())
-                
-                # 处理数值类型
-                if isinstance(value, (int, float)):
-                    return float(value)
-                
-                # 处理字符串类型
-                if isinstance(value, str):
-                    try:
-                        return float(value)
-                    except ValueError:
-                        return 0.0
-                
-                # 其他类型尝试转换
+        if not bank_statements:
+            continue
+
+        bank_statement = bank_statements[0]
+        start_date = bank_statement.get('start_date')
+        if not isinstance(start_date, datetime):
+            continue
+        if start_date.tzinfo is None:
+            start_date = shanghai_timezone.localize(start_date)
+        else:
+            start_date = start_date.astimezone(shanghai_timezone)
+        month = start_date.strftime('%Y-%m')
+
+        # 保留现有安全转换默认值，处理 Decimal128 和其他存量值类型。
+        def safe_to_float(value):
+            if value is None:
+                return 0.0
+
+            from bson import Decimal128
+            if isinstance(value, Decimal128):
+                return float(value.to_decimal())
+
+            if isinstance(value, (int, float)):
+                return float(value)
+
+            if isinstance(value, str):
                 try:
                     return float(value)
-                except (ValueError, TypeError):
+                except ValueError:
                     return 0.0
-            
-            # 获取开始日期
-            start_date = bank_statement.get('start_date')
-            if start_date:
-                disbursement[batch_number]['start_date'] = start_date
-            
-            # 汇总金额
-            disbursement[batch_number]['finance_amount_sum'] += safe_to_float(bank_statement.get('finance_amount', 0))
-            disbursement[batch_number]['interest_amount_sum'] += safe_to_float(bank_statement.get('interest_amount_usd', 0))
-            disbursement[batch_number]['purchase_price_sum'] += safe_to_float(bank_statement.get('purchase_price_usd', 0))
-    
-    # 按批次号排序
-    sorted_batches = sorted(disbursement.keys())
-    
+
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                return 0.0
+
+        disbursement[month]['finance_amount_sum'] += safe_to_float(
+            bank_statement.get('finance_amount', 0)
+        )
+        disbursement[month]['interest_amount_sum'] += safe_to_float(
+            bank_statement.get('interest_amount_usd', 0)
+        )
+        disbursement[month]['sample_count'] += 1
+
+    sorted_months = sorted(disbursement.keys())
     return {
-        'batches': sorted_batches,
-        'disbursement': disbursement
+        'months': sorted_months,
+        'series': {
+            'disbursement_amount': [
+                disbursement[month]['finance_amount_sum'] /
+                disbursement[month]['sample_count']
+                for month in sorted_months
+            ],
+            'interest': [
+                disbursement[month]['interest_amount_sum'] /
+                disbursement[month]['sample_count']
+                for month in sorted_months
+            ]
+        }
     }
 
 
 @main_bp.route('/api/get_db_disbursement')
 @login_required
 def api_get_db_disbursement():
-    """获取DB放款报表数据的API端点
-    
-    Returns:
-        JSON: DB放款报表数据
-    """
+    """获取按月平均的 DB 放款图表数据的 API 端点。"""
     from flask import jsonify
     
     try:

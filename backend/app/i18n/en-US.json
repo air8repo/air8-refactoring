@@ -285,6 +285,8 @@
     "sum_finance_amount": "Total Finance Amount",
     "sum_interest_amount": "Total Interest Amount",
     "sum_purchase_price": "Total Purchase Price",
+    "average_disbursement_amount": "Average Disbursement Amount",
+    "average_interest": "Average Interest",
     "settlement_schedule": "Settlement Schedule",
     "outstanding_amount_filter": "Outstanding Amount Filter",
     "all": "All",

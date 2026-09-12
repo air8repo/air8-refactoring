@@ -217,6 +217,8 @@
     "sum_finance_amount": "融资金额合计",
     "sum_interest_amount": "利息金额合计",
     "sum_purchase_price": "购买价格合计",
+    "average_disbursement_amount": "平均放款金额",
+    "average_interest": "平均利息",
     "settlement_schedule": "还款计划",
     "outstanding_amount_filter": "未结金额筛选",
     "all": "全部",

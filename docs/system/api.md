@@ -36,6 +36,8 @@
 | GET | /api/get_settlement_schedule | 清算计划报表 | 是 |
 | GET | /api/get_db_disbursement | DB 放款报表 | 是 |
 
+`GET /api/get_db_disbursement` 在认证成功时返回 `{code: 0, msg: "success", data: {months, series}}`。`data.months` 是升序 `YYYY-MM` 数组，`data.series.disbursement_amount` 与 `data.series.interest` 是按索引对应的月度平均值数组；空结果保持相同结构并使用空数组。异常时保留现有 `{code: 1, msg, data: {}}` 响应。
+
 **清算计划参数**：`filter_zero` (bool) — 过滤零欠款
 
 ## 5. 数据导入模块 (/import)
