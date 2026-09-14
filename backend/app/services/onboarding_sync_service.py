@@ -11,6 +11,7 @@ ONBOARDING_API_URL = (
 )
 
 _DATETIME_FORMATS = ('%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d')
+_SUPPORTED_CREDIT_LIMIT_CURRENCIES = {'USD', 'EUR'}
 
 
 def register_onboarding_sync_job(scheduler, app):
@@ -87,6 +88,13 @@ def _parse_datetime(value):
     return None
 
 
+def _normalize_credit_limit_currency(api_row):
+    currency = api_row.get('credit_limit_currency')
+    if isinstance(currency, str):
+        currency = currency.strip().upper()
+    return currency if currency in _SUPPORTED_CREDIT_LIMIT_CURRENCIES else 'USD'
+
+
 def _map_record(api_row):
     """将 API 数据映射为 MongoDB 文档（不含 created_at）"""
     approved_tenor = api_row.get('approved_tenor') or 0
@@ -117,6 +125,7 @@ def _map_record(api_row):
         'approved_tenor_days': approved_tenor,
         'advance_ratio': advance_ratio,
         'refactoring_limit': refactoring_limit,
+        'credit_limit_currency': _normalize_credit_limit_currency(api_row),
         'target_list_status': api_row.get('target_list_status', 'Y'),
         'api_update_time': _parse_datetime(api_row.get('update_time')),
         'updated_at': datetime.now(),

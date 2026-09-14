@@ -1,5 +1,6 @@
 """额度查询页面路由测试（买方层 + 供应商层）"""
 from unittest.mock import patch
+from unittest.mock import MagicMock
 
 
 SAMPLE_BUYER_ROWS = [
@@ -18,6 +19,39 @@ SAMPLE_BUYER_ROWS = [
 
 
 class TestCreditQueryRoute:
+
+    @patch('backend.app.routes.credit.get_mongo')
+    def test_renders_latest_outstanding_actual_and_keeps_warning_threshold(self, mock_get_mongo, logged_in_client):
+        mongo = MagicMock()
+        mongo.refactoring_onboard_config.find.return_value = [
+            {'uid': 'U1', 'refactoring_limit': 100000, 'buyer_code': 'B1',
+             'obligor_name': 'Buyer One'},
+        ]
+        mongo.refactoring_financing_order.find.return_value = [
+            {'uid': 'U1', 'buyer_code': 'B1', 'buyer_name': 'Buyer One',
+             'finance_request_number': 'FR1', 'invoice_number': 'INV1',
+             'financing_amount': 1000, 'status': 'funded before',
+             'bank_finance_status': 'Loan booked', 'financing_currency': 'USD'},
+        ]
+        mongo.refactoring_bank_statement.find.return_value = [
+            {'invoice': {'seller_reference': 'INV1', 'creation_time': '2026-09-10T01:00:00Z',
+                         'original_amount': 2000},
+             'finance': {'advance_ratio_pct': 90, 'status': 'Loan booked',
+                         'outstanding_amount': 10}},
+            {'invoice': {'seller_reference': 'INV1', 'creation_time': '2026-09-10T02:00:00Z',
+                         'original_amount': 2000},
+             'finance': {'advance_ratio_pct': 90, 'status': 'Loan booked',
+                         'outstanding_amount': 80}},
+        ]
+        mongo.refactoring_bank_repayment_record.find.return_value = []
+        mock_get_mongo.return_value = mongo
+
+        resp = logged_in_client.get('/credit/credit-query')
+
+        assert resp.status_code == 200
+        body = resp.get_data(as_text=True)
+        assert '80.00' in body
+        assert '90%' in body
 
     @patch('backend.app.routes.credit.get_mongo')
     @patch('backend.app.routes.credit.aggregate_by_buyer')

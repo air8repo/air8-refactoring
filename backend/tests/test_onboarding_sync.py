@@ -110,6 +110,26 @@ class TestMapRecord:
         rec = _map_record(SAMPLE_API_DATA[1])
         assert rec['refactoring_limit'] is None
 
+    @pytest.mark.parametrize('currency', ['USD', 'EUR'])
+    def test_preserves_explicit_credit_limit_currency(self, currency):
+        from backend.app.services.onboarding_sync_service import _map_record
+        row = {**SAMPLE_API_DATA[0], 'credit_limit_currency': currency,
+               'financing_currency': 'USD'}
+
+        rec = _map_record(row)
+
+        assert rec['credit_limit_currency'] == currency
+        assert 'financing_currency' not in rec
+
+    def test_defaults_missing_credit_limit_currency_to_usd_without_using_financing_currency(self):
+        from backend.app.services.onboarding_sync_service import _map_record
+        row = {**SAMPLE_API_DATA[0], 'financing_currency': 'EUR'}
+
+        rec = _map_record(row)
+
+        assert rec['credit_limit_currency'] == 'USD'
+        assert 'financing_currency' not in rec
+
     def test_no_created_at_in_mapped_record(self):
         from backend.app.services.onboarding_sync_service import _map_record
         rec = _map_record(SAMPLE_API_DATA[0])
