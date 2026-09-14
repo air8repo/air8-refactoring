@@ -1,8 +1,13 @@
 from flask import render_template, redirect, url_for, current_app
 from flask_login import login_required
 from backend.app.routes import main_bp
-from datetime import datetime, timedelta
+from backend.app.services.buyer_credit_utilization_service import (
+    SUPPORTED_CURRENCIES,
+    aggregate_buyer_credit_utilization,
+)
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
+from decimal import Decimal
 
 def get_mongo():
     """获取已初始化的mongo对象"""
@@ -72,6 +77,92 @@ def dashboard():
         db_disbursement=db_disbursement,
         latest_commit=latest_commit
     )
+
+
+def _serialize_credit_utilization_timestamp(value):
+    if not isinstance(value, datetime):
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+
+
+def _serialize_credit_utilization_number(value):
+    if value is None:
+        return None
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    return None
+
+
+def _serialize_credit_utilization_payload(payload, currency):
+    buyers = payload.get('buyers', []) if isinstance(payload, dict) else []
+    if not isinstance(buyers, list):
+        buyers = []
+
+    serialized_buyers = []
+    for buyer in buyers:
+        if not isinstance(buyer, dict):
+            continue
+        serialized_buyers.append({
+            'buyer_code': buyer.get('buyer_code') if isinstance(buyer.get('buyer_code'), str) else '',
+            'buyer_name': buyer.get('buyer_name') if isinstance(buyer.get('buyer_name'), str) else '',
+            'total_approved_credit_limit': _serialize_credit_utilization_number(
+                buyer.get('total_approved_credit_limit')
+            ),
+            'used_credit': _serialize_credit_utilization_number(buyer.get('used_credit')),
+            'credit_utilization_rate': _serialize_credit_utilization_number(
+                buyer.get('credit_utilization_rate')
+            ),
+            'remaining_credit': _serialize_credit_utilization_number(
+                buyer.get('remaining_credit')
+            ),
+            'latest_data_time': _serialize_credit_utilization_timestamp(
+                buyer.get('latest_data_time')
+            ),
+        })
+
+    return {
+        'currency': currency,
+        'latest_available_data_time': _serialize_credit_utilization_timestamp(
+            payload.get('latest_available_data_time') if isinstance(payload, dict) else None
+        ),
+        'buyers': serialized_buyers,
+    }
+
+
+@main_bp.route('/api/get_buyer_credit_limit_utilization')
+@login_required
+def api_get_buyer_credit_limit_utilization():
+    """Return the normalized, selected-currency Dashboard utilization payload."""
+    from flask import jsonify, request
+
+    currency = request.args.get('currency', '').strip().upper()
+    if currency not in SUPPORTED_CURRENCIES:
+        return jsonify({
+            'code': 1,
+            'msg': 'currency must be USD or EUR',
+            'data': {},
+        }), 400
+
+    try:
+        payload = aggregate_buyer_credit_utilization(get_mongo(), currency)
+        return jsonify({
+            'code': 0,
+            'msg': 'success',
+            'data': _serialize_credit_utilization_payload(payload, currency),
+        })
+    except Exception:
+        current_app.logger.exception(
+            'Buyer credit utilization aggregation failed for currency %s', currency
+        )
+        return jsonify({
+            'code': 1,
+            'msg': 'Unable to load credit data. Please try again.',
+            'data': {},
+        }), 500
 
 @main_bp.route('/api/get_monthly_financing_with_statement_stats')
 @login_required

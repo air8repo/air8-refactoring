@@ -1,9 +1,122 @@
 """额度管理聚合服务测试"""
 from unittest.mock import MagicMock
+from decimal import Decimal
 import pytest
 
 
 class TestGetBuyerSupplierPairs:
+
+    def test_actual_is_zero_when_no_latest_snapshot_exists(self):
+        from backend.app.services.buyer_credit_utilization_service import build_buyer_credit_utilization
+        from backend.app.services.credit_limit_service import get_buyer_supplier_pairs, get_deal_rows
+        onboard_configs = [
+            {'uid': 'U1', 'refactoring_limit': 10000, 'buyer_code': 'B1',
+             'obligor_name': 'Buyer One'},
+        ]
+        financing_orders = [
+            {'uid': 'U1', 'buyer_code': 'B1', 'buyer_name': 'Buyer One',
+             'finance_request_number': 'FR1', 'invoice_number': 'INV1',
+             'financing_amount': 1000, 'status': 'funded before',
+             'bank_finance_status': 'Loan booked', 'financing_currency': 'USD'},
+        ]
+        mongo = _make_mongo_with_repayments(
+            onboard_configs=onboard_configs,
+            financing_orders=financing_orders,
+            bank_statements=[],
+        )
+
+        deals = get_deal_rows(mongo)
+        pairs = get_buyer_supplier_pairs(mongo, deals=deals)
+        dashboard = build_buyer_credit_utilization(
+            financing_orders, [], onboard_configs, 'USD'
+        )
+
+        assert dashboard['buyers'] == []
+        assert pairs[0]['actual'] == 0
+
+    def test_actual_uses_latest_booked_outstanding_once_without_changing_financing_amount(self):
+        from backend.app.services.buyer_credit_utilization_service import build_buyer_credit_utilization
+        from backend.app.services.credit_limit_service import get_buyer_supplier_pairs, get_deal_rows
+        onboard_configs = [
+            {'uid': 'U1', 'refactoring_limit': 100000, 'buyer_code': 'B1',
+             'obligor_name': 'Buyer One'},
+        ]
+        financing_orders = [
+            {'uid': 'U1', 'buyer_code': 'B1', 'buyer_name': 'Buyer One',
+             'finance_request_number': 'FR1', 'invoice_number': 'INV1',
+             'financing_amount': 1000, 'status': 'funded before',
+             'bank_finance_status': 'Loan booked', 'financing_currency': 'USD',
+             'settled_in_air8': 'Settled'},
+        ]
+        bank_statements = [
+            {'invoice': {'seller_reference': 'INV1',
+                         'creation_time': '2026-09-10T01:00:00Z',
+                         'original_amount': 2000},
+             'finance': {'advance_ratio_pct': 90, 'status': 'Loan booked',
+                         'outstanding_amount': 10}},
+            {'invoice': {'seller_reference': 'INV1',
+                         'creation_time': '2026-09-10T02:00:00Z',
+                         'original_amount': 2000},
+                 'finance': {'advance_ratio_pct': 90, 'status': 'Loan booked',
+                         'outstanding_amount': 80}},
+        ]
+        mongo = _make_mongo_with_repayments(
+            onboard_configs=onboard_configs,
+            financing_orders=financing_orders,
+            bank_statements=bank_statements,
+            repayment_records=[
+                {'finance_request_number': 'FR1', 'settlement_amount': 20,
+                 'created_at': None},
+            ],
+        )
+
+        deals = get_deal_rows(mongo)
+        pairs = get_buyer_supplier_pairs(mongo, deals=deals)
+        dashboard = build_buyer_credit_utilization(
+            financing_orders, bank_statements, onboard_configs, 'USD'
+        )
+
+        assert deals[0]['financing_amount'] == 1800
+        assert deals[0]['credit_utilization'] == 1800
+        assert deals[0]['to_be_settled_on_db'] == 20
+        assert dashboard['buyers'][0]['used_credit'] == 80
+        assert pairs[0]['actual'] == float(dashboard['buyers'][0]['used_credit'])
+        assert pairs[0]['reserved'] == 0
+        assert pairs[0]['total_occupied'] == 60
+
+    def test_actual_decimal128_rounding_matches_dashboard_used_credit(self):
+        from bson import Decimal128
+        from backend.app.services.buyer_credit_utilization_service import build_buyer_credit_utilization
+        from backend.app.services.credit_limit_service import get_buyer_supplier_pairs, get_deal_rows
+        onboard_configs = [
+            {'uid': 'U1', 'refactoring_limit': Decimal128('10'), 'buyer_code': 'B1',
+             'obligor_name': 'Buyer One'},
+        ]
+        financing_orders = [
+            {'uid': 'U1', 'buyer_code': 'B1', 'buyer_name': 'Buyer One',
+             'finance_request_number': 'FR1', 'invoice_number': 'INV1',
+             'financing_amount': Decimal128('1000'), 'status': 'funded before',
+             'bank_finance_status': 'Loan booked', 'financing_currency': 'USD'},
+        ]
+        bank_statements = [
+            {'invoice': {'seller_reference': 'INV1', 'creation_time': '2026-09-10T02:00:00Z'},
+             'finance': {'status': 'Loan booked', 'outstanding_amount': Decimal128('2.675')}},
+        ]
+        mongo = _make_mongo_with_repayments(
+            onboard_configs=onboard_configs,
+            financing_orders=financing_orders,
+            bank_statements=bank_statements,
+        )
+
+        deals = get_deal_rows(mongo)
+        pairs = get_buyer_supplier_pairs(mongo, deals=deals)
+        dashboard = build_buyer_credit_utilization(
+            financing_orders, bank_statements, onboard_configs, 'USD'
+        )
+
+        assert dashboard['buyers'][0]['used_credit'] == Decimal('2.68')
+        assert pairs[0]['actual'] == 2.68
+        assert pairs[0]['actual'] == float(dashboard['buyers'][0]['used_credit'])
 
     def test_pair_sums_earmark_and_utilization_from_deals(self):
         from backend.app.services.credit_limit_service import get_buyer_supplier_pairs
@@ -18,6 +131,10 @@ class TestGetBuyerSupplierPairs:
                  'supplier_name': 'Seller One', 'finance_request_number': 'FR2', 'invoice_number': 'INV2',
                  'financing_amount': 2000, 'status': 'funded before', 'bank_finance_status': 'Loan booked'},
             ],
+            bank_statements=[
+                {'invoice': {'seller_reference': 'INV2', 'creation_time': '2026-09-10T02:00:00Z'},
+                 'finance': {'status': 'Loan booked', 'outstanding_amount': 2000}},
+            ],
         )
         pairs = get_buyer_supplier_pairs(mongo)
         assert len(pairs) == 1
@@ -29,6 +146,37 @@ class TestGetBuyerSupplierPairs:
         assert p['celling'] == 100000
         assert p['headroom'] == 97000
         assert abs(p['occupancy_rate'] - 0.03) < 1e-9
+
+    def test_duplicate_financing_item_contributes_latest_outstanding_once(self):
+        from backend.app.services.credit_limit_service import aggregate_by_buyer, get_buyer_supplier_pairs
+        mongo = _make_mongo_with_repayments(
+            onboard_configs=[
+                {'uid': 'U1', 'refactoring_limit': 100000, 'buyer_code': 'B1',
+                 'obligor_name': 'Buyer One'},
+                {'uid': 'U2', 'refactoring_limit': 100000, 'buyer_code': 'B1',
+                 'obligor_name': 'Buyer One'},
+            ],
+            financing_orders=[
+                {'uid': 'U1', 'buyer_code': 'B1', 'buyer_name': 'Buyer One',
+                 'finance_request_number': 'FR1', 'invoice_number': 'INV1',
+                 'financing_amount': 1000, 'status': 'funded before',
+                 'bank_finance_status': 'Loan booked'},
+                {'uid': 'U2', 'buyer_code': 'B1', 'buyer_name': 'Buyer One',
+                 'finance_request_number': 'FR1', 'invoice_number': 'INV2',
+                 'financing_amount': 2000, 'status': 'funded before',
+                 'bank_finance_status': 'Loan booked'},
+            ],
+            bank_statements=[
+                {'invoice': {'seller_reference': 'INV1', 'creation_time': '2026-09-10T01:00:00Z'},
+                 'finance': {'status': 'Loan booked', 'outstanding_amount': 80}},
+                {'invoice': {'seller_reference': 'INV2', 'creation_time': '2026-09-10T02:00:00Z'},
+                 'finance': {'status': 'Loan booked', 'outstanding_amount': 40}},
+            ],
+        )
+
+        buyers = aggregate_by_buyer(get_buyer_supplier_pairs(mongo))
+
+        assert buyers[0]['actual'] == 80
 
     def test_total_occupied_subtracts_to_be_settled_on_db(self):
         from backend.app.services.credit_limit_service import get_buyer_supplier_pairs
@@ -43,6 +191,10 @@ class TestGetBuyerSupplierPairs:
             ],
             repayment_records=[
                 {'finance_request_number': 'FR1', 'settlement_amount': 400, 'created_at': None},
+            ],
+            bank_statements=[
+                {'invoice': {'seller_reference': 'INV1', 'creation_time': '2026-09-10T02:00:00Z'},
+                 'finance': {'status': 'Loan booked', 'outstanding_amount': 1000}},
             ],
         )
         pairs = get_buyer_supplier_pairs(mongo)

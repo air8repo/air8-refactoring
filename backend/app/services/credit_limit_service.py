@@ -1,9 +1,19 @@
 """额度管理 — 实时聚合服务（不落库）"""
 from bson import Decimal128
 from datetime import datetime
+from decimal import Decimal, ROUND_HALF_UP
 import logging
 
+from backend.app.services.buyer_credit_utilization_service import (
+    _finance as _utilization_finance,
+    _financing_item_key as _utilization_item_key,
+    _invoice as _utilization_invoice,
+    _pick_latest_statement as _pick_latest_utilization_statement,
+    _to_decimal as _utilization_to_decimal,
+)
+
 logger = logging.getLogger('credit_limit_service')
+_MONEY_QUANTUM = Decimal('0.01')
 
 
 def _to_float(val):
@@ -46,7 +56,12 @@ def get_buyer_supplier_pairs(mongo, buyer_filter=None, deals=None):
     for d in deals:
         uid = d['uid']
         reserved[uid] = reserved.get(uid, 0.0) + d['earmark_forecast']
-        actual[uid] = actual.get(uid, 0.0) + d['credit_utilization']
+        # Credit Query's buyer-level Actual is reconciled to the Dashboard's
+        # selected latest snapshot.  Missing or non-qualifying snapshots are
+        # explicit zero contributions; legacy credit_utilization is not a
+        # fallback for this buyer-level metric.
+        actual_value = _utilization_to_decimal(d.get('actual_outstanding'))
+        actual[uid] = actual.get(uid, Decimal('0')) + actual_value
         settled[uid] = settled.get(uid, 0.0) + (d['to_be_settled_on_db'] or 0.0)
         deal_buyer_code.setdefault(uid, d['buyer_code'])
         deal_buyer_name.setdefault(uid, d['buyer_name'])
@@ -63,7 +78,9 @@ def get_buyer_supplier_pairs(mongo, buyer_filter=None, deals=None):
         onboard = onboard_by_uid.get(uid, {})
         celling = _to_float(onboard.get('refactoring_limit')) or 0.0
         r = round(reserved.get(uid, 0.0), 2)
-        a = round(actual.get(uid, 0.0), 2)
+        a = float(actual.get(uid, Decimal('0')).quantize(
+            _MONEY_QUANTUM, rounding=ROUND_HALF_UP
+        ))
         s = round(settled.get(uid, 0.0), 2)
         total = round(r + a - s, 2)
 
@@ -158,6 +175,57 @@ def _fetch_bank_statements_by_invoice(mongo, financing_orders):
     return result
 
 
+def _fetch_latest_actual_by_item(mongo, financing_orders):
+    """Return latest-snapshot Actual values using the Dashboard semantics.
+
+    The existing bank-statement mapping remains the source for Financing
+    Amount, reserved, settlement, and detail metrics.  This separate read
+    keeps those legacy buckets unchanged while sharing the Dashboard's latest
+    record, status, item de-duplication, and outstanding amount rules for
+    buyer-level Actual.
+    """
+    invoice_numbers = [
+        fo.get('invoice_number') for fo in financing_orders if fo.get('invoice_number')
+    ]
+    bank_statements = []
+    if invoice_numbers:
+        bank_statements = list(mongo.refactoring_bank_statement.find(
+            {'invoice.seller_reference': {'$in': invoice_numbers}}
+        ))
+
+    statements_by_reference = {}
+    for statement in bank_statements:
+        reference = _utilization_invoice(statement).get('seller_reference')
+        if reference:
+            statements_by_reference.setdefault(reference, []).append(statement)
+
+    latest_exists_by_item = set()
+    actual_by_item = {}
+    for order in financing_orders:
+        item_key = _utilization_item_key(order)
+        invoice_number = order.get('invoice_number')
+        if not item_key or not invoice_number:
+            continue
+
+        latest = _pick_latest_utilization_statement(
+            statements_by_reference.get(invoice_number, [])
+        )
+        if latest is None:
+            continue
+        latest_exists_by_item.add(item_key)
+        if item_key in actual_by_item:
+            continue
+        if _utilization_finance(latest).get('status') != 'Loan booked':
+            continue
+
+        outstanding = _utilization_to_decimal(
+            _utilization_finance(latest).get('outstanding_amount')
+        )
+        actual_by_item[item_key] = (invoice_number, outstanding)
+
+    return actual_by_item, latest_exists_by_item
+
+
 def _fetch_latest_repayment_by_fr(mongo, financing_orders):
     """按 finance_request_number 批量取还款记录，多条时取 created_at 最新一条。"""
     fr_numbers = [fo.get('finance_request_number') for fo in financing_orders if fo.get('finance_request_number')]
@@ -226,6 +294,7 @@ def _build_deal_row(fo, onboard, bs, repay):
         'financing_amount': round(financing_amount, 2),
         'earmark_forecast': round(earmark_forecast, 2),
         'credit_utilization': round(credit_utilization, 2),
+        'actual_outstanding': None,
         'to_be_settled_on_db': round(to_be_settled_on_db, 2) if to_be_settled_on_db is not None else None,
         'total_os': total_os,
         'status': status,
@@ -248,9 +317,11 @@ def get_deal_rows(mongo, buyer_filter=None):
 
     financing_orders = list(mongo.refactoring_financing_order.find())
     bs_by_invoice = _fetch_bank_statements_by_invoice(mongo, financing_orders)
+    actual_by_item, latest_exists_by_item = _fetch_latest_actual_by_item(mongo, financing_orders)
     repay_by_fr = _fetch_latest_repayment_by_fr(mongo, financing_orders)
 
     deals = []
+    assigned_actual_items = set()
     for fo in financing_orders:
         uid = fo.get('uid')
         if not uid:
@@ -258,7 +329,21 @@ def get_deal_rows(mongo, buyer_filter=None):
         onboard = onboard_by_uid.get(uid, {})
         bs = bs_by_invoice.get(fo.get('invoice_number'))
         repay = repay_by_fr.get(fo.get('finance_request_number'))
-        deals.append(_build_deal_row(fo, onboard, bs, repay))
+        deal = _build_deal_row(fo, onboard, bs, repay)
+        item_key = _utilization_item_key(fo)
+        if item_key in actual_by_item:
+            selected_invoice, outstanding = actual_by_item[item_key]
+            if (
+                item_key not in assigned_actual_items
+                and fo.get('invoice_number') == selected_invoice
+            ):
+                deal['actual_outstanding'] = outstanding
+                assigned_actual_items.add(item_key)
+            else:
+                deal['actual_outstanding'] = 0.0
+        elif item_key in latest_exists_by_item:
+            deal['actual_outstanding'] = 0.0
+        deals.append(deal)
 
     if buyer_filter:
         needle = buyer_filter.strip().lower()
